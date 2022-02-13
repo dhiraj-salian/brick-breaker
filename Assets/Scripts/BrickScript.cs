@@ -63,7 +63,7 @@ public class BrickScript : MonoBehaviour
     void GivePowerUpRandomly()
     {
         float random = Random.Range(1, 101);
-        if (random < 20)
+        if (random < 10)
         {
             Instantiate(livesPowerUp, transform.position, transform.rotation);
         }
