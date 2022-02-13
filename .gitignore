@@ -6,7 +6,10 @@ Obj/
 UnityGenerated/
 Library/
 Assets/AssetStoreTools*
+Logs/
+UserSettings/
 build/
+Packages/
 
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
@@ -21,6 +24,9 @@ ExportedObj/
 *.user
 *.unityproj
 *.booproj
+mono_crash*
+.vs/
+*.vsconfig
 
 # ============ #
 # OS generated #
