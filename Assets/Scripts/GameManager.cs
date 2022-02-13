@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
         {
             int x = Random.Range(0, countX);
             int y = Random.Range(0, countY);
-            int point = Random.Range(1, 4);
+            int point = Random.Range(1, 5);
             AddBrick(x, y, point);
         }
     }
