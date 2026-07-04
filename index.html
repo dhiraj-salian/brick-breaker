@@ -2,80 +2,142 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0a0a14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>Brick Breaker</title>
     <style>
+      /* ---------- Reset ---------- */
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html, body {
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background: #0a0a14;
+        background:
+          radial-gradient(ellipse at top, #1a1a3a 0%, #0a0a14 50%, #050508 100%);
         color: #fff;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
         -webkit-tap-highlight-color: transparent;
-        user-select: none;
         -webkit-user-select: none;
+        user-select: none;
         touch-action: none;
+        -webkit-touch-callout: none;
+        overscroll-behavior: none;
       }
+      body { position: fixed; inset: 0; }
+
+      /* ---------- Grid background pattern ---------- */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* ---------- Game container ---------- */
       #game-container {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
+        position: fixed;
+        inset: 0;
+        /* Respect iOS notch + home indicator. */
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
         display: flex;
         align-items: center;
         justify-content: center;
-      }
-      #game-canvas {
-        display: block;
-        image-rendering: pixelated;
-        background: #0a0a14;
-        position: relative;
         z-index: 1;
       }
-      #hud { z-index: 2; }
+
+      #game-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        position: relative;
+        z-index: 1;
+        touch-action: none;
+      }
+
+      /* ---------- HUD ---------- */
       #hud {
         position: absolute;
         inset: 0;
         pointer-events: none;
         font-weight: 600;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+        z-index: 2;
       }
       #hud-top, #flash-overlay { pointer-events: none; }
-      #hud-top button { pointer-events: auto; }
-      #menu-overlay, #pause-overlay, #gameover-overlay, #win-overlay {
-        pointer-events: auto;
-      }
+
       #hud-top {
         position: absolute;
-        top: 12px;
-        left: 12px;
-        right: 12px;
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        left: 14px;
+        right: 14px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 14px;
+        font-size: 15px;
         letter-spacing: 0.5px;
         z-index: 10;
+        gap: 8px;
       }
-      #score-display { font-size: 18px; }
+      #score-display {
+        font-size: 19px;
+        font-weight: 800;
+        background: rgba(0, 0, 0, 0.35);
+        padding: 6px 12px;
+        border-radius: 8px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
       #combo-display {
         font-size: 22px;
         color: #ffd700;
         opacity: 0;
-        transition: opacity 0.2s;
+        transition: opacity 0.2s, transform 0.15s;
+        font-weight: 800;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
       }
       #combo-display.active { opacity: 1; }
-      #pause-btn {
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.3);
-        color: white;
-        padding: 6px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
+      #lives-display {
+        background: rgba(0, 0, 0, 0.35);
+        padding: 6px 10px;
+        border-radius: 8px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
-      #pause-btn:hover { background: rgba(255,255,255,0.2); }
+
+      #pause-btn {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        pointer-events: auto;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        min-width: 80px;
+        min-height: 36px;
+      }
+      #pause-btn:active { background: rgba(255, 255, 255, 0.22); transform: scale(0.97); }
+
+      /* ---------- Overlays ---------- */
       #menu-overlay, #pause-overlay, #gameover-overlay, #win-overlay {
         position: absolute;
         inset: 0;
@@ -83,39 +145,66 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        background: rgba(0,0,0,0.85);
+        background: rgba(5, 5, 12, 0.88);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
         text-align: center;
         padding: 24px;
+        pointer-events: auto;
+        z-index: 20;
       }
       #menu-overlay.active, #pause-overlay.active, #gameover-overlay.active, #win-overlay.active {
         display: flex;
       }
-      .overlay h1 { font-size: 48px; margin-bottom: 16px; }
-      .overlay h2 { font-size: 28px; margin-bottom: 12px; }
-      .overlay p { margin: 8px 0; opacity: 0.85; }
+
+      .overlay h1 {
+        font-size: 48px;
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #4ade80, #06b6d4, #f472b6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
+      }
+      .overlay h2 { font-size: 28px; margin-bottom: 12px; font-weight: 800; }
+      .overlay p { margin: 8px 0; opacity: 0.85; font-size: 15px; }
+      .overlay .hint { opacity: 0.55; font-size: 12px; margin-top: 18px; line-height: 1.6; }
+
       .overlay button {
-        margin-top: 24px;
-        padding: 14px 32px;
-        background: #4ade80;
+        margin-top: 20px;
+        padding: 16px 40px;
+        background: linear-gradient(135deg, #4ade80, #22c55e);
         color: #052e16;
         border: none;
-        border-radius: 8px;
+        border-radius: 12px;
         font-size: 18px;
-        font-weight: 700;
+        font-weight: 800;
         cursor: pointer;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 24px rgba(74, 222, 128, 0.4);
+        min-width: 200px;
+        min-height: 56px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: transform 0.1s;
       }
-      .overlay button:hover { background: #22c55e; }
+      .overlay button:active { transform: scale(0.97); }
+
       .overlay input {
         margin-top: 16px;
-        padding: 10px 14px;
+        padding: 12px 16px;
         font-size: 16px;
-        border-radius: 6px;
-        border: 1px solid rgba(255,255,255,0.3);
-        background: rgba(255,255,255,0.05);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.08);
         color: white;
-        width: 240px;
+        width: min(260px, 80vw);
         text-align: center;
       }
+      .overlay input::placeholder { color: rgba(255, 255, 255, 0.5); }
+
       #flash-overlay {
         position: absolute;
         inset: 0;
@@ -123,25 +212,55 @@
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s ease-out;
+        z-index: 5;
       }
+
+      /* ---------- Leaderboard ---------- */
       #leaderboard {
-        margin-top: 16px;
-        font-size: 14px;
+        margin-top: 18px;
+        font-size: 13px;
         max-height: 200px;
         overflow-y: auto;
+        width: min(320px, 90vw);
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 10px;
+        padding: 10px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
       }
+      #leaderboard:empty { display: none; }
       #leaderboard .row {
         display: flex;
         justify-content: space-between;
-        padding: 4px 12px;
+        padding: 6px 12px;
         opacity: 0.9;
+        border-radius: 6px;
       }
-      #leaderboard .row:nth-child(1) { color: #ffd700; font-weight: 700; }
-      #leaderboard .row:nth-child(2) { color: #c0c0c0; }
+      #leaderboard .row:nth-child(1) {
+        color: #ffd700;
+        font-weight: 800;
+        background: rgba(255, 215, 0, 0.1);
+      }
+      #leaderboard .row:nth-child(2) { color: #e0e0e0; }
       #leaderboard .row:nth-child(3) { color: #cd7f32; }
+
+      /* ---------- Mobile tweaks ---------- */
       @media (max-width: 640px) {
-        .overlay h1 { font-size: 36px; }
-        .overlay h2 { font-size: 22px; }
+        .overlay h1 { font-size: 38px; }
+        .overlay h2 { font-size: 24px; }
+        .overlay button { font-size: 17px; padding: 14px 32px; min-height: 52px; }
+        #score-display { font-size: 16px; padding: 5px 10px; }
+        #combo-display { font-size: 18px; }
+        #pause-btn { font-size: 12px; padding: 7px 12px; min-width: 72px; }
+      }
+      @media (max-width: 380px) {
+        /* tiny phones — compress HUD */
+        #score-display, #lives-display { font-size: 13px; padding: 4px 8px; }
+        #combo-display { font-size: 16px; }
+        #pause-btn { font-size: 11px; padding: 6px 10px; min-width: 60px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #combo-display, .overlay button { transition: none; }
       }
     </style>
   </head>
@@ -153,26 +272,25 @@
           <div id="score-display">SCORE: <span id="score-value">0</span></div>
           <div id="combo-display">x<span id="combo-value">2</span> COMBO!</div>
           <div id="lives-display">❤️ <span id="lives-value">3</span></div>
-          <button id="pause-btn">PAUSE</button>
+          <button id="pause-btn" aria-label="Pause">PAUSE</button>
         </div>
         <div id="menu-overlay" class="overlay active">
           <h1>BRICK BREAKER</h1>
           <p>Break all the bricks. Don't drop the ball.</p>
-          <p style="opacity:0.6;font-size:13px;margin-top:16px">
-            ← → or A/D: move paddle • SPACE: launch • P: pause • R: restart
-          </p>
           <button id="start-btn">START GAME</button>
           <div id="leaderboard"></div>
+          <p class="hint">Swipe / drag to move • Tap to launch • Pause button to halt</p>
         </div>
         <div id="pause-overlay" class="overlay">
           <h2>PAUSED</h2>
-          <p>Press P or tap to resume</p>
+          <p>Tap RESUME or button below to continue</p>
+          <button id="resume-btn">RESUME</button>
         </div>
         <div id="gameover-overlay" class="overlay">
           <h2>GAME OVER</h2>
           <p>Final score: <span id="final-score">0</span></p>
-          <p style="opacity:0.6;font-size:13px">Press R or tap to restart</p>
           <div id="leaderboard"></div>
+          <button id="restart-btn">PLAY AGAIN</button>
         </div>
         <div id="win-overlay" class="overlay">
           <h2>YOU WIN!</h2>
@@ -180,6 +298,7 @@
           <input id="name-input" type="text" placeholder="Enter your name" maxlength="20" />
           <button id="submit-score-btn">SUBMIT SCORE</button>
           <div id="leaderboard"></div>
+          <button id="restart-btn-2">PLAY AGAIN</button>
         </div>
         <div id="flash-overlay"></div>
       </div>

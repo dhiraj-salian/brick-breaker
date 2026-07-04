@@ -50,7 +50,8 @@ import { submitScore, fetchTopScores } from './net/leaderboard.js';
 const STEP = 1 / WORLD.STEP_HZ;
 
 const canvas = document.getElementById('game-canvas');
-const { renderer, scene, camera, resize } = createScene(canvas);
+const sceneRender = createScene(canvas);
+const { renderer, scene, camera, resize, playLight } = sceneRender;
 let worldWidth = 14;
 
 // Game state
@@ -146,10 +147,18 @@ function syncPowerUpMeshes() {
     powerUpGroup.remove(c);
     if (c.geometry) c.geometry.dispose();
     if (c.material) c.material.dispose();
+    if (c.userData?.halo?.material) c.userData.halo.material.dispose();
   }
-  state.powerUps.forEach((p) => {
+  const t = performance.now() / 1000;
+  state.powerUps.forEach((p, i) => {
     const mesh = createPowerUpMesh(p.type, powerUpColor(p.type));
     mesh.position.set(p.x, p.y, 0);
+    // Slow rotation + bob.
+    if (mesh.userData?.core) {
+      mesh.userData.core.rotation.x = t * 1.4 + i;
+      mesh.userData.core.rotation.y = t * 1.7 + i;
+    }
+    mesh.position.y += Math.sin(t * 3 + i) * 0.1;
     powerUpGroup.add(mesh);
   });
 }
@@ -442,6 +451,13 @@ function loop(now) {
   applyCameraShake(camera, state.shake);
 
   hud.render(state);
+
+  // Subtle play-light pulse while playing.
+  if (playLight) {
+    const target = state.status === STATUS.PLAYING ? 0.9 : 0.35;
+    playLight.intensity += (target - playLight.intensity) * 0.05;
+    playLight.position.x = Math.sin(now / 1500) * 2;
+  }
 
   renderer.render(scene, camera);
   requestAnimationFrame(loop);

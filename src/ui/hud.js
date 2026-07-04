@@ -28,6 +28,16 @@ export function createHUD() {
       if (state.combo !== lastCombo) {
         $('combo-value').textContent = String(state.combo);
         $('combo-display').classList.toggle('active', state.combo > 1);
+        // Subtle bounce on combo growth.
+        if (state.combo > lastCombo && state.combo > 1) {
+          const el = $('combo-display');
+          el.style.transform = 'scale(1.25)';
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              el.style.transform = 'scale(1)';
+            });
+          });
+        }
         lastCombo = state.combo;
       }
       // Flash overlay
@@ -68,23 +78,49 @@ function showOverlay(status, state) {
 }
 
 export function setupButtons({ onStart, onPause, onResume, onRestart, onSubmitScore }) {
-  $('start-btn').addEventListener('click', onStart);
-  $('pause-btn').addEventListener('click', () => {
+  // Start
+  $('start-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onStart();
+  });
+  // Pause toggle button (top-right).
+  $('pause-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
     if ($('pause-overlay').classList.contains('active')) onResume();
     else onPause();
   });
-  $('submit-score-btn').addEventListener('click', () => {
+  // Resume button (on pause overlay).
+  $('resume-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onResume();
+  });
+  // Restart button (on gameover overlay).
+  $('restart-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onRestart();
+  });
+  // Restart button (on win overlay).
+  $('restart-btn-2').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onRestart();
+  });
+  // Submit score.
+  $('submit-score-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
     const name = $('name-input').value.trim() || 'Anonymous';
     onSubmitScore(name);
   });
 
-  // Click anywhere on overlays to restart/continue
-  $('gameover-overlay').addEventListener('click', (e) => {
-    if (e.target.tagName !== 'BUTTON' && !$('gameover-overlay').querySelector('input')) onRestart();
+  // Tap-to-resume on the pause overlay (anywhere except buttons).
+  $('pause-overlay').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') onResume();
   });
-  $('pause-overlay').addEventListener('click', onResume);
+  // Tap-to-restart on gameover overlay (anywhere except buttons).
+  $('gameover-overlay').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') onRestart();
+  });
 
-  // Visibility change → auto-pause
+  // Visibility change → auto-pause when tab/app is hidden mid-game.
   document.addEventListener('visibilitychange', () => {
     if (document.hidden && !$('menu-overlay').classList.contains('active')) onPause();
   });

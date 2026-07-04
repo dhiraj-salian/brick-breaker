@@ -1,12 +1,13 @@
 /**
  * Input manager — unified keyboard + touch + mouse.
- * Reads world X from screen X via canvas bounds.
+ * Mobile-first: touch position drives the paddle (drag to move), and tap
+ * launches the ball.
  *
- * Returns:
- *   paddleTargetX  — number or null
- *   launchIntent   — boolean (edge-triggered)
- *   pauseIntent    — boolean (edge-triggered)
- *   restartIntent  — boolean (edge-triggered)
+ * Returns (each frame, edge-triggered intents cleared after read):
+ *   paddleTargetX  — world X coordinate (number) or null
+ *   launchIntent   — boolean (tap / click / Space)
+ *   pauseIntent    — boolean (Esc / P / pause-btn is wired separately in HUD)
+ *   restartIntent  — boolean (R key)
  */
 
 export function createInputManager(canvas) {
@@ -14,10 +15,10 @@ export function createInputManager(canvas) {
   let launchIntent = false;
   let pauseIntent = false;
   let restartIntent = false;
-  let lastPointerX = null;
-  let lastTouchX = null;
+  let lastPointerX = null; // normalized 0..1 across canvas client width
+  let dragging = false;
 
-  // Keyboard
+  // ---------- Keyboard ----------
   const keys = new Set();
   window.addEventListener('keydown', (e) => {
     keys.add(e.code);
@@ -37,66 +38,91 @@ export function createInputManager(canvas) {
     keys.delete(e.code);
   });
 
-  // Mouse
-  canvas.addEventListener('mousemove', (e) => {
+  // ---------- Helpers ----------
+  function pointerRatioFromEvent(e) {
     const rect = canvas.getBoundingClientRect();
-    lastPointerX = e.clientX - rect.left;
-  });
-  canvas.addEventListener('mousedown', () => {
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    if (rect.width <= 0) return null;
+    return Math.max(0, Math.min(1, x / rect.width));
+  }
+
+  // ---------- Mouse ----------
+  canvas.addEventListener('mousedown', (e) => {
+    dragging = true;
+    const r = pointerRatioFromEvent(e);
+    if (r != null) lastPointerX = r;
     launchIntent = true;
   });
+  canvas.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const r = pointerRatioFromEvent(e);
+    if (r != null) lastPointerX = r;
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
 
-  // Touch
-  canvas.addEventListener(
-    'touchstart',
-    (e) => {
-      e.preventDefault();
-      const t = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      lastTouchX = t.clientX - rect.left;
-      lastPointerX = lastTouchX;
-      launchIntent = true;
-    },
-    { passive: false }
-  );
-  canvas.addEventListener(
-    'touchmove',
-    (e) => {
-      e.preventDefault();
-      const t = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      lastTouchX = t.clientX - rect.left;
-      lastPointerX = lastTouchX;
-    },
-    { passive: false }
-  );
+  // ---------- Touch ----------
+  // Use passive: false so we can preventDefault and stop the page from
+  // trying to scroll/zoom on swipes over the canvas.
+  function onTouchStart(e) {
+    if (e.touches.length === 0) return;
+    e.preventDefault();
+    dragging = true;
+    const r = pointerRatioFromEvent(e);
+    if (r != null) lastPointerX = r;
+    launchIntent = true;
+  }
+  function onTouchMove(e) {
+    if (!dragging || e.touches.length === 0) return;
+    e.preventDefault();
+    const r = pointerRatioFromEvent(e);
+    if (r != null) lastPointerX = r;
+  }
+  function onTouchEnd(e) {
+    e.preventDefault();
+    dragging = false;
+  }
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+  canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
+  // ---------- Read (per frame) ----------
   return {
     read(getWorldWidth) {
+      const worldWidth = getWorldWidth();
       let target = paddleTargetX;
 
-      // Keyboard
+      // Keyboard drives paddle to extremes.
       if (keys.has('ArrowLeft') || keys.has('KeyA')) {
-        target = -1; // far left
+        target = -worldWidth / 2;
       } else if (keys.has('ArrowRight') || keys.has('KeyD')) {
-        target = 1;
+        target = worldWidth / 2;
       } else if (lastPointerX != null) {
-        // Pointer position
-        const ratio = lastPointerX / canvas.clientWidth;
-        target = -1 + ratio * 2;
+        // Map normalized pointer position (0..1) to world X.
+        target = -worldWidth / 2 + lastPointerX * worldWidth;
       }
 
       const out = {
-        paddleTargetX: target == null ? null : target * (getWorldWidth() / 2),
+        paddleTargetX: target,
         launchIntent,
         pauseIntent,
         restartIntent,
       };
-      // Consume edges
+      // Consume edges.
       launchIntent = false;
       pauseIntent = false;
       restartIntent = false;
       return out;
+    },
+    reset() {
+      paddleTargetX = null;
+      lastPointerX = null;
+      dragging = false;
+      launchIntent = false;
+      pauseIntent = false;
+      restartIntent = false;
     },
   };
 }
