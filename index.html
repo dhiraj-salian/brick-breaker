@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Brick Breaker</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0a0a14;
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none;
+      }
+      #game-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #game-canvas {
+        display: block;
+        image-rendering: pixelated;
+        background: #0a0a14;
+        position: relative;
+        z-index: 1;
+      }
+      #hud { z-index: 2; }
+      #hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        font-weight: 600;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+      }
+      #hud-top, #flash-overlay { pointer-events: none; }
+      #hud-top button { pointer-events: auto; }
+      #menu-overlay, #pause-overlay, #gameover-overlay, #win-overlay {
+        pointer-events: auto;
+      }
+      #hud-top {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        z-index: 10;
+      }
+      #score-display { font-size: 18px; }
+      #combo-display {
+        font-size: 22px;
+        color: #ffd700;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #combo-display.active { opacity: 1; }
+      #pause-btn {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      #pause-btn:hover { background: rgba(255,255,255,0.2); }
+      #menu-overlay, #pause-overlay, #gameover-overlay, #win-overlay {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.85);
+        text-align: center;
+        padding: 24px;
+      }
+      #menu-overlay.active, #pause-overlay.active, #gameover-overlay.active, #win-overlay.active {
+        display: flex;
+      }
+      .overlay h1 { font-size: 48px; margin-bottom: 16px; }
+      .overlay h2 { font-size: 28px; margin-bottom: 12px; }
+      .overlay p { margin: 8px 0; opacity: 0.85; }
+      .overlay button {
+        margin-top: 24px;
+        padding: 14px 32px;
+        background: #4ade80;
+        color: #052e16;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .overlay button:hover { background: #22c55e; }
+      .overlay input {
+        margin-top: 16px;
+        padding: 10px 14px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.05);
+        color: white;
+        width: 240px;
+        text-align: center;
+      }
+      #flash-overlay {
+        position: absolute;
+        inset: 0;
+        background: white;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease-out;
+      }
+      #leaderboard {
+        margin-top: 16px;
+        font-size: 14px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      #leaderboard .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 12px;
+        opacity: 0.9;
+      }
+      #leaderboard .row:nth-child(1) { color: #ffd700; font-weight: 700; }
+      #leaderboard .row:nth-child(2) { color: #c0c0c0; }
+      #leaderboard .row:nth-child(3) { color: #cd7f32; }
+      @media (max-width: 640px) {
+        .overlay h1 { font-size: 36px; }
+        .overlay h2 { font-size: 22px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <canvas id="game-canvas"></canvas>
+      <div id="hud">
+        <div id="hud-top">
+          <div id="score-display">SCORE: <span id="score-value">0</span></div>
+          <div id="combo-display">x<span id="combo-value">2</span> COMBO!</div>
+          <div id="lives-display">❤️ <span id="lives-value">3</span></div>
+          <button id="pause-btn">PAUSE</button>
+        </div>
+        <div id="menu-overlay" class="overlay active">
+          <h1>BRICK BREAKER</h1>
+          <p>Break all the bricks. Don't drop the ball.</p>
+          <p style="opacity:0.6;font-size:13px;margin-top:16px">
+            ← → or A/D: move paddle • SPACE: launch • P: pause • R: restart
+          </p>
+          <button id="start-btn">START GAME</button>
+          <div id="leaderboard"></div>
+        </div>
+        <div id="pause-overlay" class="overlay">
+          <h2>PAUSED</h2>
+          <p>Press P or tap to resume</p>
+        </div>
+        <div id="gameover-overlay" class="overlay">
+          <h2>GAME OVER</h2>
+          <p>Final score: <span id="final-score">0</span></p>
+          <p style="opacity:0.6;font-size:13px">Press R or tap to restart</p>
+          <div id="leaderboard"></div>
+        </div>
+        <div id="win-overlay" class="overlay">
+          <h2>YOU WIN!</h2>
+          <p>Final score: <span id="win-score">0</span></p>
+          <input id="name-input" type="text" placeholder="Enter your name" maxlength="20" />
+          <button id="submit-score-btn">SUBMIT SCORE</button>
+          <div id="leaderboard"></div>
+        </div>
+        <div id="flash-overlay"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

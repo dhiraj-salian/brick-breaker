@@ -1,0 +1,35 @@
+{
+  "name": "brickbreaker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Three.js brick-breaker game — deployed on Cloudflare free tier",
+  "scripts": {
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:worker": "vitest run --project worker --passWithNoTests",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install --with-deps chromium",
+    "lint": "eslint src tests && prettier --check src tests",
+    "format": "prettier --write src tests",
+    "build": "vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "deploy:worker": "cd worker && wrangler deploy"
+  },
+  "dependencies": {
+    "three": "^0.176.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.21",
+    "@playwright/test": "^1.61.1",
+    "eslint": "^9.17.0",
+    "globals": "^15.14.0",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.4.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.9",
+    "wrangler": "^4.10.0"
+  }
+}
