@@ -10,7 +10,9 @@
  *   key "scores" → JSON array, sorted desc, capped at 100
  *
  * Rate limit: 5 POSTs per IP per minute (in-memory Map, sufficient for free tier).
- * CORS: allow ALLOWED_ORIGIN env var (set to https://brickbreaker.pages.dev).
+ * CORS: allow comma-separated list in ALLOWED_ORIGIN env var (e.g.
+ *       "https://brickbreaker.dbldr.app,https://brickbreaker-631.pages.dev").
+ *       Falls back to "*" if unset.
  */
 
 const MAX_SCORES = 100;
@@ -19,6 +21,19 @@ const RATE_LIMIT_MAX = 5;
 const TS_SKEW_MS = 5 * 60_000; // ±5 min
 
 const rateLimitMap = new Map();
+
+function allowedOrigins(env) {
+  const raw = env.ALLOWED_ORIGIN || '*';
+  if (raw === '*') return new Set(['*']);
+  return new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
+}
+
+function pickOrigin(request, allowed) {
+  if (allowed.has('*')) return '*';
+  const reqOrigin = request.headers.get('Origin');
+  if (reqOrigin && allowed.has(reqOrigin)) return reqOrigin;
+  return 'null';
+}
 
 function corsHeaders(origin) {
   return {
@@ -134,7 +149,8 @@ async function handleGet(request, env, origin) {
 
 export default {
   async fetch(request, env, ctx) {
-    const origin = env.ALLOWED_ORIGIN || '*';
+    const allowed = allowedOrigins(env);
+    const origin = pickOrigin(request, allowed);
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
     }

@@ -14,13 +14,15 @@ id = "317dc0d4062845c99dfdc36589099ca4"
 preview_id = "9c51a11ec0eb4d1280eef3b6de3a9e00"
 
 # Public vars.
+# ALLOWED_ORIGIN is a comma-separated list of allowed request origins.
+# First entry is the primary production URL.
 [vars]
-ALLOWED_ORIGIN = "https://brickbreaker-631.pages.dev"
+ALLOWED_ORIGIN = "https://brickbreaker.dbldr.app,https://brickbreaker-631.pages.dev"
 
 # Staging environment — for `wrangler deploy -e staging` or local dev.
 [env.staging]
 [env.staging.vars]
-ALLOWED_ORIGIN = "http://localhost:5173"
+ALLOWED_ORIGIN = "http://localhost:5173,http://localhost:8788"
 [[env.staging.kv_namespaces]]
 binding = "SCORES"
 id = "317dc0d4062845c99dfdc36589099ca4"
