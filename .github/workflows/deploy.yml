@@ -28,6 +28,7 @@ jobs:
         run: npm run build
         env:
           VITE_HMAC_SECRET: ${{ secrets.VITE_HMAC_SECRET }}
+          VITE_LEADERBOARD_URL: ${{ secrets.VITE_LEADERBOARD_URL }}
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1

@@ -2,22 +2,21 @@ name = "brickbreaker-leaderboard"
 main = "src/index.js"
 compatibility_date = "2024-12-01"
 
-# KV namespace binding. Create with:
+# KV namespace binding.
 #   wrangler kv:namespace create SCORES
 #   wrangler kv:namespace create SCORES --preview
-# Then fill in the IDs below.
 [[kv_namespaces]]
 binding = "SCORES"
-id = "REPLACE_WITH_KV_ID"
-preview_id = "REPLACE_WITH_PREVIEW_KV_ID"
+id = "317dc0d4062845c99dfdc36589099ca4"
+preview_id = "9c51a11ec0eb4d1280eef3b6de3a9e00"
 
 # Vars (non-secret). Set ALLOWED_ORIGIN to your Pages URL.
 #   wrangler secret put HMAC_SECRET
 [vars]
-ALLOWED_ORIGIN = "https://brickbreaker.pages.dev"
+ALLOWED_ORIGIN = "https://brickbreaker-631.pages.dev"
 
 [env.production.vars]
-ALLOWED_ORIGIN = "https://brickbreaker.pages.dev"
+ALLOWED_ORIGIN = "https://brickbreaker-631.pages.dev"
 
 [env.staging.vars]
 ALLOWED_ORIGIN = "http://localhost:5173"
