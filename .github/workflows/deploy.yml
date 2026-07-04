@@ -8,7 +8,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to Cloudflare
+    name: Deploy to Cloudflare Pages + Worker
     runs-on: ubuntu-latest
 
     steps:
@@ -27,20 +27,21 @@ jobs:
       - name: Build (Vite production bundle)
         run: npm run build
         env:
-          VITE_HMAC_SECRET: ${{ secrets.VITE_HMAC_SECRET }}
-          VITE_LEADERBOARD_URL: ${{ secrets.VITE_LEADERBOARD_URL }}
+          VITE_HMAC_SECRET: '${{ secrets.VITE_HMAC_SECRET }}'
+          VITE_LEADERBOARD_URL: '${{ secrets.VITE_LEADERBOARD_URL }}'
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
-        with:
-          apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          projectName: brickbreaker
-          directory: dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      # Use wrangler pages deploy directly — cloudflare/pages-action@v1
+      # mis-routes tag pushes to the preview environment (it can't infer
+      # the production branch from a tag ref). wrangler targets production
+      # explicitly via --branch=main.
+      - name: Deploy to Cloudflare Pages (production)
+        run: npx wrangler pages deploy dist --project-name=brickbreaker --branch=main --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CF_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CF_ACCOUNT_ID }}'
 
       - name: Deploy Worker (leaderboard)
         run: cd worker && CLOUDFLARE_ENV="" npx wrangler deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: '${{ secrets.CF_API_TOKEN }}'
+          CLOUDFLARE_ACCOUNT_ID: '${{ secrets.CF_ACCOUNT_ID }}'
