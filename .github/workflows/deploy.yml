@@ -40,7 +40,7 @@ jobs:
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy Worker (leaderboard)
-        run: cd worker && npx wrangler deploy
+        run: cd worker && CLOUDFLARE_ENV="" npx wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
