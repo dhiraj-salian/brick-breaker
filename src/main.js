@@ -13,9 +13,9 @@ import {
 } from './render/meshes.js';
 import { createParticleSystem } from './render/particles.js';
 import { applyCameraShake } from './render/camera-controller.js';
-import { createHUD, setupButtons } from './ui/hud.js';
+import { createHUD, setupButtons, renderLeaderboardPanel } from './ui/hud.js';
 import { createInputManager } from './ui/input.js';
-import { sfx, resumeAudio } from './audio/sfx.js';
+import { sfx, resumeAudio, isMuted, toggleMuted } from './audio/sfx.js';
 import {
   powerUpColor,
   maybeDropPowerUp,
@@ -211,7 +211,7 @@ function applyEvents(events) {
         // Ensure upward
         if (bounced.vy < 0) bounced.vy = -bounced.vy;
         state.balls[idx] = bounced;
-        sfx.paddleHit();
+        sfx.paddleHit(ev.spin);
         state = resetCombo(state);
       }
     }
@@ -343,6 +343,7 @@ setupButtons({
     resumeAudio();
     state = startGame(state);
     loadLevel(0);
+    refreshLeaderboard();
   },
   onPause: () => {
     if (state.status === STATUS.PLAYING) {
@@ -356,17 +357,31 @@ setupButtons({
     state = createInitialState(1);
     loadLevel(0);
     hud.showMenu();
+    refreshLeaderboard();
   },
   onSubmitScore: async (name) => {
     try {
       await submitScore(name, state.score);
       const top = await fetchTopScores(10);
       renderLeaderboard(top);
+      renderLeaderboardPanel(top, state.score);
     } catch (e) {
       console.error('Score submit failed', e);
     }
   },
+  onToggleMute: () => toggleMuted(),
+  isMuted: () => isMuted(),
 });
+
+async function refreshLeaderboard() {
+  try {
+    const top = await fetchTopScores(10);
+    renderLeaderboard(top);
+    renderLeaderboardPanel(top, state.score);
+  } catch (e) {
+    /* leaderboard fetch failed — non-critical */
+  }
+}
 
 function renderLeaderboard(scores) {
   document.querySelectorAll('#leaderboard').forEach((el) => {
@@ -392,9 +407,7 @@ function escapeHtml(s) {
 }
 
 // Load leaderboard on init
-fetchTopScores(10)
-  .then(renderLeaderboard)
-  .catch(() => {});
+refreshLeaderboard();
 
 function loop(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
@@ -460,8 +473,19 @@ function loop(now) {
   }
 
   renderer.render(scene, camera);
+
+  // Periodic leaderboard refresh (every 15s while playing) so players see
+  // other people's scores climbing in real time.
+  leaderboardTimer += dt;
+  if (leaderboardTimer > 15 && state.status === STATUS.PLAYING) {
+    leaderboardTimer = 0;
+    refreshLeaderboard();
+  }
+
   requestAnimationFrame(loop);
 }
+
+let leaderboardTimer = 0;
 
 window.addEventListener('resize', () => resize());
 
