@@ -43,10 +43,13 @@ test.describe('Brick Breaker smoke', () => {
     await page.keyboard.press('Space');
     await page.waitForTimeout(300);
 
+    // Pause via the top-right button.
     await page.click('#pause-btn');
     await expect(page.locator('#pause-overlay')).toBeVisible();
 
-    await page.click('#pause-btn');
+    // Resume via the resume button on the overlay (the overlay covers
+    // the pause button by design — see index.html CSS z-index).
+    await page.click('#resume-btn');
     await expect(page.locator('#pause-overlay')).not.toBeVisible();
   });
 });
