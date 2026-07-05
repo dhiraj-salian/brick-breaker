@@ -98,6 +98,29 @@ describe('collision-detector: detectPaddleCollision', () => {
     const hit = detectPaddleCollision(b, paddle);
     expect(hit.spin).toBeGreaterThan(0);
   });
+
+  // Regression: ball near ceiling should NOT register as a paddle hit.
+  // Previously, the paddle AABB had no `h` field, so circleAabbHit did
+  // math with NaN (clamp(_, NaN, NaN)) and the comparison `distSq > r*r`
+  // returned false → phantom hit → ball was re-bounced every frame and
+  // stuck at the ceiling forever.
+  it('does NOT register a hit when ball is far above paddle (regression for ceiling-stuck bug)', () => {
+    const b = ball(0, 9.5, 0, 11, 0.3); // ball at ceiling, moving up
+    const paddle = { x: 0, y: -8, width: 2.4 }; // real paddle shape (no `h`)
+    const hit = detectPaddleCollision(b, paddle);
+    expect(hit).toBeNull();
+  });
+
+  it('handles paddle with only width (no height) without phantom hits', () => {
+    // Real-world paddle object: { x, y, width, targetWidth }. No `height`/`h`.
+    const paddle = { x: 0, y: -8, width: 2.4, targetWidth: 2.4, targetX: 0 };
+    const farAbove = ball(0, 9, 0, 5, 0.3);
+    const farLeft = ball(-50, -8, 1, 0, 0.3);
+    const farRight = ball(50, -8, -1, 0, 0.3);
+    expect(detectPaddleCollision(farAbove, paddle)).toBeNull();
+    expect(detectPaddleCollision(farLeft, paddle)).toBeNull();
+    expect(detectPaddleCollision(farRight, paddle)).toBeNull();
+  });
 });
 
 describe('collision-detector: detectWallBounce', () => {

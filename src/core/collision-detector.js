@@ -47,10 +47,21 @@ export function detectBrickCollisions(state) {
 
 export function detectPaddleCollision(ball, paddle) {
   if (ball.attached) return null;
-  const hit = circleAabbHit(ball, paddle);
+  // Normalize paddle to the AABB shape expected by circleAabbHit
+  // (paddle uses `width`/`height`; circleAabbHit expects `w`/`h`).
+  // Without this, every check is a phantom hit (NaN propagation in the
+  // math makes `distSq > r*r` false) and the ball gets re-bounced each frame.
+  const paddleAabb = {
+    x: paddle.x,
+    y: paddle.y,
+    w: paddle.width ?? paddle.w ?? WORLD.PADDLE_WIDTH,
+    h: paddle.height ?? paddle.h ?? WORLD.PADDLE_HEIGHT,
+  };
+  const hit = circleAabbHit(ball, paddleAabb);
   if (!hit) return null;
   // Contact offset in [-1, 1] based on horizontal position
-  const offset = clamp((ball.x - paddle.x) / (paddle.width / 2), -1, 1);
+  const halfW = paddleAabb.w / 2;
+  const offset = halfW > 0 ? clamp((ball.x - paddle.x) / halfW, -1, 1) : 0;
   return { ...hit, spin: offset };
 }
 
