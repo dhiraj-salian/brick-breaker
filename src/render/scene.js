@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WORLD } from '../core/constants.js';
+import { REQUIRED_WORLD_WIDTH } from '../core/game-state.js';
 
 /**
  * Scene factory — creates renderer, scene, orthographic camera.
@@ -89,9 +90,7 @@ export function createScene(canvas) {
     //     (BRICK_COLS * (BRICK_WIDTH + BRICK_GAP) + 2 * HORIZONTAL_MARGIN)
     //   - height-driven: keep WORLD.HEIGHT as the vertical span
     // The frustum height (Y axis) is the max; world width derives from it.
-    const HORIZONTAL_MARGIN = 1.0;
-    const requiredWorldWidth =
-      WORLD.BRICK_COLS * (WORLD.BRICK_WIDTH + WORLD.BRICK_GAP) + 2 * HORIZONTAL_MARGIN;
+    const requiredWorldWidth = REQUIRED_WORLD_WIDTH;
     const fhByWidth = requiredWorldWidth / aspect; // Y span needed if world width = required
     const fh = Math.max(WORLD.HEIGHT, fhByWidth);
 

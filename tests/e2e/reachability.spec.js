@@ -23,9 +23,7 @@ test('game runs without console errors', async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Filter out unrelated errors (Three.js / Vite dev warnings are OK).
-  const realErrors = consoleErrors.filter(
-    (e) => !e.includes('WebGL') && !e.includes('[vite]'),
-  );
+  const realErrors = consoleErrors.filter((e) => !e.includes('WebGL') && !e.includes('[vite]'));
   expect(realErrors, `console errors: ${realErrors.join('\n')}`).toEqual([]);
 });
 
@@ -61,6 +59,6 @@ test('paddle hit produces the expected spin deflection', async ({ page }) => {
   // We just check that vx has been applied at all (not 0).
   expect(
     Math.abs(ballSample.vx),
-    `ball vx=${ballSample.vx} suggests spin was not applied`,
+    `ball vx=${ballSample.vx} suggests spin was not applied`
   ).toBeGreaterThan(0.1);
 });

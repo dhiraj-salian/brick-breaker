@@ -30,6 +30,7 @@ import {
   resume,
   loseLife,
   winGame,
+  REQUIRED_WORLD_WIDTH,
 } from './core/game-state.js';
 import { parseLayout, allBricksBroken } from './core/brick-grid.js';
 import { stepPhysics } from './core/physics-stepper.js';
@@ -44,6 +45,7 @@ import { reattachLostBalls } from './core/ball-controller.js';
 import { calculateScore } from './core/score-calculator.js';
 import { registerHit, tickCombo, resetCombo } from './core/combo-system.js';
 import { STATUS, POWER_UP_TYPE, WORLD } from './core/constants.js';
+import { generateDefaultName } from './core/default-name.js';
 import { LEVELS } from './levels/levels.js';
 import { submitScore, fetchTopScores } from './net/leaderboard.js';
 
@@ -305,12 +307,16 @@ function physicsStep(dt) {
 
   // Re-attach ball if lost
   if (state._lostBall && state.balls.length === 0) {
+    const wasPlaying = state.status === STATUS.PLAYING;
     state = reattachLostBalls(state);
     state = loseLife(state);
     if (state.status === STATUS.LOST) {
       sfx.lose();
       state.shake.intensity = 1.0;
       state.flash = 1.0;
+      hud.showGameOver(state.score);
+      // Only auto-submit if we transitioned from PLAYING→LOST on this step.
+      if (wasPlaying) autoSubmitScore();
     } else {
       state.shake.intensity = 0.5;
     }
@@ -323,6 +329,7 @@ function physicsStep(dt) {
       state = winGame(state);
       sfx.win();
       hud.showWin(state.score);
+      autoSubmitScore();
     } else {
       // Advance to next level (simplified: reset state for next level)
       loadLevel(state.level); // level index = state.level (0-based after advance)
@@ -387,6 +394,31 @@ async function refreshLeaderboard() {
   }
 }
 
+/**
+ * Auto-submit the current score with a generated default name.
+ *
+ * Called from the WIN and LOST transitions so players never lose their
+ * score by forgetting to type a name (or clicking Restart too fast). The
+ * generated name is shown in the leaderboard panel; the user can still
+ * manually rename + re-submit if they wish.
+ *
+ * Skips submission when score is 0 — posting zero-scores clutters the
+ * board. Safe to call repeatedly (network failure is swallowed).
+ */
+async function autoSubmitScore() {
+  if (!state.score || state.score <= 0) return;
+  const name = generateDefaultName();
+  try {
+    await submitScore(name, state.score);
+    // Refresh panel so the saved entry shows up immediately.
+    const top = await fetchTopScores(10);
+    renderLeaderboard(top);
+    renderLeaderboardPanel(top, state.score);
+  } catch (e) {
+    /* network or HMAC failure — non-critical */
+  }
+}
+
 function renderLeaderboard(scores) {
   document.querySelectorAll('#leaderboard').forEach((el) => {
     if (!el) return;
@@ -439,8 +471,12 @@ function loop(now) {
   }
 
   // Resize
-  const { width, height, worldWidth: ww } = resize();
+  const { worldWidth: ww } = resize();
   worldWidth = ww;
+  // Keep physics world width in sync with the camera frustum so the ball
+  // doesn't bounce off invisible walls short of the outermost bricks.
+  // Never let it drop below REQUIRED_WORLD_WIDTH (imported via game-state).
+  state.worldWidth = Math.max(ww, REQUIRED_WORLD_WIDTH);
 
   // Step physics (fixed-step accumulator)
   if (state.status === STATUS.PLAYING) {

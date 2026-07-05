@@ -5,6 +5,16 @@ import { STATUS, WORLD } from './constants.js';
  * No class; state is a plain object passed through pure functions.
  */
 
+// Horizontal margin around the brick grid, in world units.
+// Used both by scene.js (frustum sizing) and game-state.js (physics
+// world width) so the ball can always reach the outermost columns.
+export const HORIZONTAL_MARGIN = 1.0;
+
+// Required world width: brick layout + 2 * margin. Ball physics must use
+// this (or anything larger) so all BRICK_COLS are reachable.
+export const REQUIRED_WORLD_WIDTH =
+  WORLD.BRICK_COLS * (WORLD.BRICK_WIDTH + WORLD.BRICK_GAP) + 2 * HORIZONTAL_MARGIN;
+
 export function createInitialState(level = 1) {
   return {
     status: STATUS.MENU,
@@ -26,7 +36,10 @@ export function createInitialState(level = 1) {
     shake: { intensity: 0 },
     flash: 0,
     cameraY: 0,
-    worldWidth: 14, // updated by scene init
+    // Sized so all bricks fit horizontally with the standard margin.
+    // Updated by main.js's resize loop if the viewport demands a wider
+    // frustum (e.g. mobile portrait), but never narrower than this.
+    worldWidth: REQUIRED_WORLD_WIDTH,
   };
 }
 
@@ -62,7 +75,10 @@ export function loseLife(state) {
   if (state.status !== STATUS.PLAYING) return state;
   const lives = state.lives - 1;
   if (lives <= 0) {
-    return { ...state, lives: 0, status: STATUS.LOST, balls: [] };
+    // LOST is a terminal state — clear remaining balls so the scene visibly
+    // stops moving (otherwise the ball keeps flying/falling forever, looking
+    // like the game is "stuck on finishing").
+    return { ...state, lives: 0, status: STATUS.LOST, balls: [], _lostBall: false };
   }
   return { ...state, lives };
 }
@@ -73,5 +89,7 @@ export function winLevel(state) {
 }
 
 export function winGame(state) {
-  return { ...state, status: STATUS.WON };
+  // WON is also terminal — clear balls and reset combo so the win screen
+  // is a clean freeze, not a ball still flying across an empty grid.
+  return { ...state, status: STATUS.WON, balls: [], combo: 1, comboTimer: 0 };
 }
