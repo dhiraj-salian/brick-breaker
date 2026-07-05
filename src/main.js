@@ -202,8 +202,12 @@ function applyEvents(events) {
       if (idx >= 0) {
         const speed = Math.hypot(ev.ball.vx, ev.ball.vy);
         const bounced = bounceBall(ev.ball, 0, 1, Math.max(speed, WORLD.BALL_BASE_SPEED));
-        // Apply spin
-        bounced.vx += ev.spin * 6;
+        // Apply spin. SPIN_INFLUENCE controls how much horizontal velocity
+        // the ball gets per unit paddle-offset. With BASE_SPEED=12, a value
+        // of 9 gives a max launch angle of ~49° from vertical — enough to
+        // comfortably reach the outermost brick columns (cx ≈ ±8.5) with
+        // only ~75% paddle offset (rather than requiring a perfect edge hit).
+        bounced.vx += ev.spin * 9;
         // Re-normalize (safe)
         const norm = safeNormalize(bounced.vx, bounced.vy, WORLD.BALL_BASE_SPEED);
         bounced.vx = norm.vx;

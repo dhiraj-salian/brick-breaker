@@ -66,7 +66,7 @@ function physicsStep(state) {
       if (idx >= 0) {
         const speed = Math.hypot(ball.vx, ball.vy);
         const bounced = bounceBall(ball, 0, 1, Math.max(speed, WORLD.BALL_BASE_SPEED));
-        bounced.vx += hit.spin * 6;
+        bounced.vx += hit.spin * 9;
         const norm = safeNormalize(bounced.vx, bounced.vy, WORLD.BALL_BASE_SPEED);
         bounced.vx = norm.vx;
         bounced.vy = norm.vy;

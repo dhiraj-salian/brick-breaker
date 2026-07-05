@@ -150,3 +150,23 @@ Way more than a brick-breaker game needs.
 ## License
 
 Personal project. No license specified.
+
+---
+
+## Release notes
+
+### v0.3.2 (2026-07-05)
+
+- **Fix: outer bricks unreachable.** Spin influence bumped from 6 → 9 (max launch angle from vertical: 27° → 49°). With the wider angle, the ball can comfortably reach the outermost brick columns (cx ≈ ±8.5) with only ~75% paddle offset, instead of requiring a perfect edge hit. Also smooths gameplay on wider devices where the brick grid is larger than the default world. 96/96 tests pass (+3 reachability regression tests).
+
+### v0.3.1 (2026-07-05)
+
+- **Fix: ball stuck at ceiling.** `detectPaddleCollision` was passing the paddle object directly to `circleAabbHit`, which expects `{x, y, w, h}` while paddle uses `{x, y, width, height}`. NaN half-extents produced a phantom hit every frame after the ball touched the ceiling; `bounceBall` then flipped `vy` positive and pinned the ball at `y = halfH - r`. Fix normalizes the paddle to AABB shape before the hit test. Adds 2 unit tests + a 300-frame integration regression (`ceiling-stuck.test.js`). 93/93 tests pass.
+
+### v0.3.0 (2026-07-04)
+
+- Always-visible leaderboard panel (top 5, periodic refresh every 15s, highlights current player).
+- Mute toggle with localStorage persistence.
+- Reworked SFX (sine + triangle waves instead of harsh square/saw).
+- Mobile stuck-recovery via `enforceMinSpeed` (min-speed enforcement every physics step).
+- 82 unit + worker tests + Playwright e2e.
