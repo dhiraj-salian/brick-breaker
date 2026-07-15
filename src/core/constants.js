@@ -33,6 +33,7 @@ export const WORLD = Object.freeze({
   PADDLE_HEIGHT: 0.4,
   PADDLE_WIDTH: 2.4,
   PADDLE_LERP: 18, // higher = snappier
+  PADDLE_SPEED: 16, // keyboard paddle speed (world units / sec)
   BALL_RADIUS: 0.3,
   BALL_BASE_SPEED: 12, // units / sec
   BALL_SPEED_PER_LEVEL: 0.5,

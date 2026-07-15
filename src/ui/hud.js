@@ -69,7 +69,7 @@ export function createHUD() {
   };
 }
 
-function showOverlay(status, state) {
+function showOverlay(status, _state) {
   $('menu-overlay').classList.toggle('active', status === 'menu');
   $('pause-overlay').classList.toggle('active', status === 'paused');
   $('gameover-overlay').classList.toggle('active', status === 'lost');
@@ -78,6 +78,9 @@ function showOverlay(status, state) {
   // Hide floating leaderboard panel during overlays (avoids visual clutter).
   const panel = $('leaderboard-panel');
   if (panel) panel.style.opacity = status === 'playing' ? '1' : '0.35';
+  // Show/hide auth badge during gameplay
+  const badge = $('auth-badge');
+  if (badge) badge.style.display = status === 'playing' ? 'block' : 'none';
 }
 
 export function setupButtons({
@@ -88,6 +91,9 @@ export function setupButtons({
   onSubmitScore,
   onToggleMute,
   isMuted,
+  onLogin,
+  onRegister,
+  onLogout,
 }) {
   // Start
   $('start-btn').addEventListener('click', (e) => {
@@ -139,6 +145,46 @@ export function setupButtons({
     onSubmitScore(name);
   });
 
+  // Auth buttons (on menu overlay).
+  if (onLogin) {
+    $('login-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const u = $('auth-user').value.trim();
+      const p = $('auth-pass').value;
+      if (!u || !p) {
+        $('auth-error').textContent = 'Enter username and password';
+        return;
+      }
+      onLogin(u, p);
+    });
+  }
+  if (onRegister) {
+    $('register-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const u = $('auth-user').value.trim();
+      const p = $('auth-pass').value;
+      if (!u || !p) {
+        $('auth-error').textContent = 'Enter username and password';
+        return;
+      }
+      onRegister(u, p);
+    });
+  }
+  if (onLogout) {
+    $('logout-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      onLogout();
+    });
+  }
+
+  // Enter key in password field triggers login
+  $('auth-pass').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      $('login-btn').click();
+    }
+  });
+
   // Tap-to-resume on the pause overlay (anywhere except buttons).
   $('pause-overlay').addEventListener('click', (e) => {
     if (e.target.tagName !== 'BUTTON') onResume();
@@ -155,11 +201,44 @@ export function setupButtons({
 }
 
 /**
- * Render the floating leaderboard panel (always visible during gameplay).
- * @param {Array<{name:string, score:number, ts:number}>} scores
- * @param {number|null} currentPlayerScore - Highlights if in top 5
+ * Update the auth UI in the menu overlay.
+ * @param {{username: string|null}} user - current user or null
  */
-export function renderLeaderboardPanel(scores, currentPlayerScore = null) {
+export function updateAuthUI(user) {
+  const loggedIn = $('auth-logged-in');
+  const form = $('auth-form');
+  const badge = $('auth-badge');
+  if (user && user.username) {
+    loggedIn.style.display = 'block';
+    form.style.display = 'none';
+    $('auth-username').textContent = user.username;
+    badge.textContent = `Playing as: ${user.username}`;
+    badge.style.display = 'block';
+  } else {
+    loggedIn.style.display = 'none';
+    form.style.display = 'block';
+    badge.style.display = 'none';
+  }
+  // Clear error + password
+  $('auth-error').textContent = '';
+  $('auth-pass').value = '';
+}
+
+/**
+ * Show an auth error message.
+ * @param {string} msg
+ */
+export function showAuthError(msg) {
+  $('auth-error').textContent = msg;
+}
+
+/**
+ * Render the floating leaderboard panel (always visible during gameplay).
+ * @param {Array<{name:string, score:number, ts:number, username?:string}>} scores
+ * @param {number|null} currentPlayerScore - Highlights if in top 5
+ * @param {string|null} currentUsername - Highlights the current user's row
+ */
+export function renderLeaderboardPanel(scores, currentPlayerScore = null, currentUsername = null) {
   const el = $('leaderboard-list');
   if (!el) return;
   if (!scores || scores.length === 0) {
@@ -168,14 +247,16 @@ export function renderLeaderboardPanel(scores, currentPlayerScore = null) {
   }
   const top = scores.slice(0, 5);
   el.innerHTML = top
-    .map(
-      (s, i) =>
-        `<div class="row ${currentPlayerScore !== null && s.score === currentPlayerScore ? 'me' : ''}">
+    .map((s, i) => {
+      const isMe =
+        (currentUsername && s.username === currentUsername) ||
+        (currentPlayerScore !== null && s.score === currentPlayerScore);
+      return `<div class="row ${isMe ? 'me' : ''}">
           <span class="rank">${i + 1}.</span>
           <span class="name">${escapeHtml(s.name)}</span>
           <span class="score">${s.score}</span>
-        </div>`
-    )
+        </div>`;
+    })
     .join('');
 }
 

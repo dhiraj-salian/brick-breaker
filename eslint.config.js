@@ -21,7 +21,23 @@ export default [
       },
     },
     rules: {
-      'no-unused-vars': 'warn',
+      // Errors, not warnings — so `npm run lint` fails on unused vars.
+      // 'no-unused-vars' is configured to ignore:
+      //   - names prefixed with `_` (intentional "ignore me")
+      //   - unused catch parameters (caughtErrors: 'none')
+      //     so `catch (e) { /* swallow */ }` doesn't fail
+      //   - argsAfterThis in class methods
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          caughtErrors: 'none',
+          args: 'after-used',
+          ignoreRestSiblings: true,
+        },
+      ],
     },
   },
 ];

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Pre-commit hook: lint + unit tests must pass before commit lands.
+# Skip with `git commit --no-verify` (use sparingly).
+exec "$(dirname "$0")/../scripts/quality-gate.sh" --quick

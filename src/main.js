@@ -13,7 +13,13 @@ import {
 } from './render/meshes.js';
 import { createParticleSystem } from './render/particles.js';
 import { applyCameraShake } from './render/camera-controller.js';
-import { createHUD, setupButtons, renderLeaderboardPanel } from './ui/hud.js';
+import {
+  createHUD,
+  setupButtons,
+  renderLeaderboardPanel,
+  updateAuthUI,
+  showAuthError,
+} from './ui/hud.js';
 import { createInputManager } from './ui/input.js';
 import { sfx, resumeAudio, isMuted, toggleMuted } from './audio/sfx.js';
 import {
@@ -48,6 +54,7 @@ import { STATUS, POWER_UP_TYPE, WORLD } from './core/constants.js';
 import { generateDefaultName } from './core/default-name.js';
 import { LEVELS } from './levels/levels.js';
 import { submitScore, fetchTopScores } from './net/leaderboard.js';
+import { register, login, getMe, logout, loadSession } from './net/auth.js';
 
 const STEP = 1 / WORLD.STEP_HZ;
 
@@ -79,8 +86,6 @@ scene.add(particleSystem.mesh);
 // Power-up meshes pool
 const powerUpGroup = new THREE.Group();
 scene.add(powerUpGroup);
-
-let particlesToEmit = []; // queued events from physics → consumed in render
 
 function loadLevel(levelIndex) {
   const level = LEVELS[levelIndex];
@@ -228,18 +233,6 @@ function vibrate(ms) {
   if (navigator.vibrate) navigator.vibrate(ms);
 }
 
-function checkCaughtPowerUps() {
-  const before = state.powerUps.length;
-  const remaining = [];
-  for (const p of state.powerUps) {
-    // Caught by paddle? (Handled in stepPowerUps via y-range check, but here we just check what fell off screen)
-    // We'll detect catch via overlap with paddle in stepPowerUps; this function applies the effect.
-    remaining.push(p);
-  }
-  // Apply effects on diff
-  // (Power-ups caught are filtered out in stepPhysics; here we just apply by type.)
-}
-
 function physicsStep(dt) {
   // Apply input
   state = updatePaddleTarget(state, paddleTargetOverride ?? state.paddle.targetX);
@@ -375,20 +368,54 @@ setupButtons({
       await submitScore(name, state.score);
       const top = await fetchTopScores(10);
       renderLeaderboard(top);
-      renderLeaderboardPanel(top, state.score);
+      renderLeaderboardPanel(top, state.score, currentUser?.username);
     } catch (e) {
       console.error('Score submit failed', e);
     }
   },
   onToggleMute: () => toggleMuted(),
   isMuted: () => isMuted(),
+  onLogin: async (username, password) => {
+    try {
+      const result = await login(username, password);
+      if (result.ok) {
+        currentUser = { username: result.username };
+        updateAuthUI(currentUser);
+        refreshLeaderboard();
+      } else {
+        showAuthError(result.error || 'Login failed');
+      }
+    } catch (e) {
+      showAuthError('Network error');
+    }
+  },
+  onRegister: async (username, password) => {
+    try {
+      const result = await register(username, password);
+      if (result.ok) {
+        currentUser = { username: result.username };
+        updateAuthUI(currentUser);
+        refreshLeaderboard();
+      } else {
+        showAuthError(result.error || 'Registration failed');
+      }
+    } catch (e) {
+      showAuthError('Network error');
+    }
+  },
+  onLogout: () => {
+    logout();
+    currentUser = null;
+    updateAuthUI(null);
+    refreshLeaderboard();
+  },
 });
 
 async function refreshLeaderboard() {
   try {
     const top = await fetchTopScores(10);
     renderLeaderboard(top);
-    renderLeaderboardPanel(top, state.score);
+    renderLeaderboardPanel(top, state.score, currentUser?.username);
   } catch (e) {
     /* leaderboard fetch failed — non-critical */
   }
@@ -413,7 +440,7 @@ async function autoSubmitScore() {
     // Refresh panel so the saved entry shows up immediately.
     const top = await fetchTopScores(10);
     renderLeaderboard(top);
-    renderLeaderboardPanel(top, state.score);
+    renderLeaderboardPanel(top, state.score, currentUser?.username);
   } catch (e) {
     /* network or HMAC failure — non-critical */
   }
@@ -442,6 +469,30 @@ function escapeHtml(s) {
   );
 }
 
+// Current authenticated user (or null)
+let currentUser = null;
+
+// On startup, check for existing session
+async function initAuth() {
+  const session = loadSession();
+  if (!session) return;
+  try {
+    const result = await getMe(session.token);
+    if (result.ok) {
+      currentUser = { username: result.username };
+      updateAuthUI(currentUser);
+    } else {
+      // Token expired or invalid — clear it
+      logout();
+    }
+  } catch {
+    // Network error — keep the session, try again later
+    currentUser = { username: session.username };
+    updateAuthUI(currentUser);
+  }
+}
+initAuth();
+
 // Load leaderboard on init
 refreshLeaderboard();
 
@@ -449,8 +500,8 @@ function loop(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.1);
   lastTime = now;
 
-  // Read input
-  const i = input.read(() => worldWidth);
+  // Read input — pass dt so keyboard velocity integrates per frame
+  const i = input.read(() => worldWidth, dt);
   if (i.paddleTargetX != null) paddleTargetOverride = i.paddleTargetX;
   if (i.pauseIntent) {
     if (state.status === STATUS.PLAYING) state = pause(state);

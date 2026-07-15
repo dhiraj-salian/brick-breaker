@@ -3,6 +3,8 @@
  * HMAC signs the payload for casual anti-cheat.
  */
 
+import { getToken } from './auth.js';
+
 const API_BASE = import.meta.env.VITE_LEADERBOARD_URL || ''; // empty = same origin (Pages Function or direct worker)
 
 async function hmacHex(message, secret) {
@@ -24,9 +26,15 @@ export async function submitScore(name, score) {
   const ts = Date.now();
   const secret = import.meta.env.VITE_HMAC_SECRET || '';
   const sig = await hmacHex(`${name}${score}${ts}`, secret);
+  const headers = { 'Content-Type': 'application/json' };
+  // Attach auth token if available (authenticated scores tie to user accounts)
+  const token = getToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
   const res = await fetch(`${API_BASE}/scores`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ name, score, ts, sig }),
   });
   if (!res.ok) {

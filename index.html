@@ -433,6 +433,87 @@
           transition: none;
         }
       }
+
+      /* ---------- Auth UI ---------- */
+      .auth-box {
+        margin-top: 16px;
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 10px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        width: min(280px, 90vw);
+      }
+      .auth-label {
+        font-size: 13px;
+        margin: 4px 0;
+      }
+      .auth-input {
+        margin-top: 8px;
+        padding: 10px 14px;
+        font-size: 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .auth-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+      .auth-btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .auth-btn {
+        flex: 1;
+        margin-top: 0;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        cursor: pointer;
+        min-width: 80px;
+        min-height: 40px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: background 0.1s;
+      }
+      .auth-btn:active {
+        background: rgba(255, 255, 255, 0.28);
+        transform: scale(0.97);
+      }
+      .auth-error {
+        color: #f87171;
+        font-size: 12px;
+        margin-top: 8px;
+        min-height: 16px;
+      }
+      #auth-logged-in {
+        text-align: center;
+      }
+      /* Small "Playing as" badge in corner during gameplay */
+      #auth-badge {
+        position: absolute;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+        left: 14px;
+        font-size: 11px;
+        opacity: 0.7;
+        background: rgba(0, 0, 0, 0.35);
+        padding: 4px 8px;
+        border-radius: 6px;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        pointer-events: none;
+        z-index: 8;
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -452,6 +533,22 @@
           <h1>BRICK BREAKER</h1>
           <p>Break all the bricks. Don't drop the ball.</p>
           <button id="start-btn">START GAME</button>
+          <!-- Auth UI -->
+          <div id="auth-menu-box" class="auth-box">
+            <div id="auth-logged-in" style="display: none;">
+              <p class="auth-label">Playing as: <span id="auth-username" style="font-weight: 800; color: #4ade80;"></span></p>
+              <button id="logout-btn" class="auth-btn">LOGOUT</button>
+            </div>
+            <div id="auth-form">
+              <input id="auth-user" type="text" placeholder="Username" maxlength="20" class="auth-input" />
+              <input id="auth-pass" type="password" placeholder="Password" class="auth-input" />
+              <div class="auth-btn-row">
+                <button id="login-btn" class="auth-btn">LOGIN</button>
+                <button id="register-btn" class="auth-btn">REGISTER</button>
+              </div>
+              <p id="auth-error" class="auth-error"></p>
+            </div>
+          </div>
           <div id="leaderboard"></div>
           <p class="hint">Swipe / drag to move • Tap to launch • Pause button to halt</p>
         </div>
@@ -475,6 +572,7 @@
           <button id="restart-btn-2">PLAY AGAIN</button>
         </div>
         <div id="flash-overlay"></div>
+        <div id="auth-badge"></div>
         <div id="leaderboard-panel" aria-label="Top scores">
           <div class="title">🏆 Top Scores</div>
           <div id="leaderboard-list"></div>

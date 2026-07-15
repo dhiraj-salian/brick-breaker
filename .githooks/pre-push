@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Pre-push hook: full quality gate (lint + unit + worker + build) before
+# anything leaves the box. Skip with `git push --no-verify` (use sparingly).
+exec "$(dirname "$0")/../scripts/quality-gate.sh" --full
