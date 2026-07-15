@@ -2,10 +2,10 @@
 
 > **Single source of truth** for where this project is right now. Read this first in any session.
 
-Last updated: 2026-07-15 17:42 IST
-Current checkpoint: 011-auth-on-hud-and-ux
-Current branch: feat/auth-on-score-and-ux (local, not yet pushed)
-CI status: ✅ passing (last commit on main: 9288c84)
+Last updated: 2026-07-15 18:20 IST
+Current checkpoint: 012-auth-first-screen
+Current branch: feat/auth-first-screen (local, not yet pushed)
+CI status: ✅ passing (last commit on main: 2419f18)
 Live URLs: https://brick-breaker.dhirajsalian.com (custom domain)
 GitHub: https://github.com/dhiraj-salian/brick-breaker
 
@@ -23,6 +23,7 @@ GitHub: https://github.com/dhiraj-salian/brick-breaker
 - [x] **009-auth** (2026-07-15 12:05) — Username/password auth on top of leaderboard (commit `9288c84`).
 - [x] **010-auth-deployed** (2026-07-15 12:22) — Created Cloudflare USERS KV namespace, fixed wrangler.toml placeholder, redeployed as `v0.4.1` (commit `c809b5c`). Live at `https://brickbreaker-leaderboard.admin-dbldr.workers.dev`.
 - [x] **011-auth-on-hud-and-ux** (2026-07-15 17:42) — Identity store wired into HUD/game-over/leaderboard; responsive UX pass with CSS custom properties, fluid clamp() sizing, ≥44px touch targets, large-screen breakpoints (commit `389fb46` on `feat/auth-on-score-and-ux`).
+- [x] **012-auth-first-screen** (2026-07-15 18:20) — Full-screen `#auth-screen` overlay gates game access. Login/register moved from menu to centered card with tabbed LOGIN/REGISTER. Boot sequence: auth screen first, menu only after login/register/guest. Logout returns to auth screen. 25 new unit tests + 19 e2e tests. (branch `feat/auth-first-screen`)
 
 ## In Progress
 
@@ -49,6 +50,7 @@ GitHub: https://github.com/dhiraj-salian/brick-breaker
 | Architecture doc | `~/.openclaw/workspace/brickbreaker/docs/ARCHITECTURE.md` |
 | State (this file) | `~/.openclaw/workspace/brickbreaker/PROJECT_STATE.md` |
 | Checkpoint 011 state | `~/.openclaw/workspace/brickbreaker/.state/CHECKPOINT-011-auth-on-hud-and-ux.md` |
+| Checkpoint 012 state | `~/.openclaw/workspace/brickbreaker/.state/CHECKPOINT-012-auth-first-screen.md` |
 | Implementation checklist | `~/.openclaw/workspace/brickbreaker/IMPLEMENTATION.md` |
 | Game source | `~/.openclaw/workspace/brickbreaker/src/` |
 | Worker source | `~/.openclaw/workspace/brickbreaker/worker/` |

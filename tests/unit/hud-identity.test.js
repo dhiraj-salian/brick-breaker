@@ -3,6 +3,10 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 // We test the HUD username display functions in isolation.
 // The HUD reads from the identity store and renders into DOM elements.
+//
+// NOTE: As of v0.5.1, the auth form (login/register inputs) lives in the
+// separate #auth-screen overlay. The menu only shows the logged-in state
+// (username + logout button).
 
 // Set up DOM stubs BEFORE importing the module under test.
 function setupDOM() {
@@ -16,7 +20,14 @@ function setupDOM() {
       <button id="mute-btn"><span id="mute-icon">🔊</span></button>
       <button id="pause-btn">PAUSE</button>
     </div>
-    <div id="menu-overlay" class="overlay active"></div>
+    <div id="menu-overlay" class="overlay active">
+      <div id="auth-menu-box" class="auth-box">
+        <div id="auth-logged-in" style="display: none;">
+          <p class="auth-label">Playing as: <span id="auth-username"></span></p>
+          <button id="logout-btn" class="auth-btn">LOGOUT</button>
+        </div>
+      </div>
+    </div>
     <div id="pause-overlay" class="overlay"></div>
     <div id="gameover-overlay" class="overlay">
       <h2>GAME OVER</h2>
@@ -47,7 +58,8 @@ function setupDOM() {
 }
 
 // Import after DOM setup
-const { updateHudIdentity, renderGameOverIdentity } = await import('../../src/ui/hud.js');
+const { updateHudIdentity, renderGameOverIdentity, updateAuthUI } =
+  await import('../../src/ui/hud.js');
 
 describe('HUD identity display', () => {
   beforeEach(() => {
@@ -113,6 +125,34 @@ describe('HUD identity display', () => {
       renderGameOverIdentity({ username: 'alice' }, 1240, 3);
       const el = document.getElementById('gameover-username');
       expect(el.textContent).toContain('×3');
+    });
+  });
+
+  describe('updateAuthUI (menu, logged-in state only)', () => {
+    it('shows logged-in state with username when user is set', () => {
+      updateAuthUI({ username: 'alice' });
+      const loggedIn = document.getElementById('auth-logged-in');
+      expect(loggedIn.style.display).toBe('block');
+      expect(document.getElementById('auth-username').textContent).toBe('alice');
+    });
+
+    it('hides logged-in state when user is null', () => {
+      updateAuthUI(null);
+      const loggedIn = document.getElementById('auth-logged-in');
+      expect(loggedIn.style.display).toBe('none');
+    });
+
+    it('shows auth badge when logged in', () => {
+      updateAuthUI({ username: 'bob' });
+      const badge = document.getElementById('auth-badge');
+      expect(badge.style.display).toBe('block');
+      expect(badge.textContent).toContain('bob');
+    });
+
+    it('hides auth badge when not logged in', () => {
+      updateAuthUI(null);
+      const badge = document.getElementById('auth-badge');
+      expect(badge.style.display).toBe('none');
     });
   });
 });

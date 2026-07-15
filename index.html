@@ -437,7 +437,142 @@
         }
       }
 
-      /* ---------- Auth UI ---------- */
+      /* ---------- Auth Screen (full-screen first screen) ---------- */
+      .auth-screen {
+        position: fixed;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(ellipse at top, #1a1a3a 0%, #0a0a14 50%, #050508 100%);
+        z-index: 100; /* above everything */
+        padding: var(--space-xl);
+        overflow-y: auto;
+      }
+      .auth-screen.active {
+        display: flex;
+      }
+      .auth-card {
+        width: clamp(280px, 90vw, 420px);
+        max-width: 420px;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: clamp(12px, 2vw, 20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: clamp(20px, 5vw, 36px);
+        box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6);
+        text-align: center;
+      }
+      .auth-title {
+        font-size: var(--type-2xl);
+        margin-bottom: var(--space-md);
+        background: linear-gradient(135deg, #4ade80, #06b6d4, #f472b6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 900;
+        letter-spacing: 1px;
+        text-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
+      }
+      .auth-tabs {
+        display: flex;
+        gap: var(--space-xs);
+        margin-bottom: var(--space-lg);
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: var(--panel-radius);
+        padding: var(--space-xs);
+      }
+      .auth-tab {
+        flex: 1;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--type-base);
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.5);
+        border: none;
+        border-radius: calc(var(--panel-radius) - 2px);
+        cursor: pointer;
+        min-height: var(--touch-min);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: all 0.15s;
+      }
+      .auth-tab.active {
+        background: rgba(74, 222, 128, 0.15);
+        color: #4ade80;
+      }
+      .auth-input {
+        margin-top: var(--space-sm);
+        padding: var(--space-md) var(--space-lg);
+        font-size: 16px; /* 16px prevents iOS zoom on focus */
+        border-radius: var(--panel-radius);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      .auth-input:focus {
+        outline: none;
+        border-color: rgba(74, 222, 128, 0.5);
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .auth-input::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .auth-submit-btn {
+        margin-top: var(--space-lg);
+        padding: var(--space-md) var(--space-2xl);
+        background: linear-gradient(135deg, #4ade80, #22c55e);
+        color: #052e16;
+        border: none;
+        border-radius: var(--panel-radius);
+        font-size: var(--type-lg);
+        font-weight: 800;
+        cursor: pointer;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 24px rgba(74, 222, 128, 0.4);
+        width: 100%;
+        min-height: var(--touch-min);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: transform 0.1s;
+      }
+      .auth-submit-btn:active {
+        transform: scale(0.97);
+      }
+      .auth-submit-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .auth-error {
+        color: #f87171;
+        font-size: var(--type-sm);
+        margin-top: var(--space-sm);
+        min-height: var(--type-sm);
+      }
+      .auth-guest-link {
+        margin-top: var(--space-xl);
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: var(--type-sm);
+        text-decoration: underline;
+        cursor: pointer;
+        min-height: var(--touch-min);
+        min-width: var(--touch-min);
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
+      .auth-guest-link:active {
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      /* ---------- Menu auth UI (logged-in state only) ---------- */
       .auth-box {
         margin-top: var(--space-md);
         padding: var(--space-md) var(--space-lg);
@@ -451,29 +586,8 @@
         font-size: var(--type-sm);
         margin: var(--space-xs) 0;
       }
-      .auth-input {
-        margin-top: var(--space-sm);
-        padding: var(--space-sm) var(--space-md);
-        font-size: 16px; /* 16px prevents iOS zoom */
-        border-radius: var(--panel-radius);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.08);
-        color: white;
-        width: 100%;
-        text-align: center;
-        box-sizing: border-box;
-      }
-      .auth-input::placeholder {
-        color: rgba(255, 255, 255, 0.5);
-      }
-      .auth-btn-row {
-        display: flex;
-        gap: var(--space-sm);
-        margin-top: var(--space-sm);
-      }
       .auth-btn {
-        flex: 1;
-        margin-top: 0;
+        margin-top: var(--space-sm);
         padding: var(--space-sm) var(--space-md);
         font-size: var(--type-base);
         font-weight: 700;
@@ -491,12 +605,6 @@
       .auth-btn:active {
         background: rgba(255, 255, 255, 0.28);
         transform: scale(0.97);
-      }
-      .auth-error {
-        color: #f87171;
-        font-size: var(--type-sm);
-        margin-top: var(--space-sm);
-        min-height: var(--type-sm);
       }
       #auth-logged-in {
         text-align: center;
@@ -583,6 +691,23 @@
     </style>
   </head>
   <body>
+    <!-- Auth screen: full-screen overlay shown at boot, before game -->
+    <div id="auth-screen" class="auth-screen" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <div class="auth-card">
+        <h1 id="auth-title" class="auth-title">BRICK BREAKER</h1>
+        <div class="auth-tabs" role="tablist">
+          <button id="auth-tab-login" class="auth-tab active" role="tab" aria-selected="true">LOGIN</button>
+          <button id="auth-tab-register" class="auth-tab" role="tab" aria-selected="false">REGISTER</button>
+        </div>
+        <form id="auth-form" autocomplete="on">
+          <input id="auth-user" type="text" placeholder="Username" maxlength="20" class="auth-input" autocomplete="username" />
+          <input id="auth-pass" type="password" placeholder="Password" class="auth-input" autocomplete="current-password" />
+          <button id="auth-submit-btn" type="submit" class="auth-submit-btn">LOGIN</button>
+        </form>
+        <p id="auth-error" class="auth-error" role="alert"></p>
+        <button id="auth-guest-btn" class="auth-guest-link">Continue as Guest</button>
+      </div>
+    </div>
     <div id="game-container">
       <canvas id="game-canvas"></canvas>
       <div id="hud">
@@ -595,24 +720,15 @@
           </button>
           <button id="pause-btn" aria-label="Pause">PAUSE</button>
         </div>
-        <div id="menu-overlay" class="overlay active">
+        <div id="menu-overlay" class="overlay">
           <h1>BRICK BREAKER</h1>
           <p>Break all the bricks. Don't drop the ball.</p>
           <button id="start-btn">START GAME</button>
-          <!-- Auth UI -->
+          <!-- Auth UI (logged-in state only; login/register moved to #auth-screen) -->
           <div id="auth-menu-box" class="auth-box">
             <div id="auth-logged-in" style="display: none;">
               <p class="auth-label">Playing as: <span id="auth-username" style="font-weight: 800; color: #4ade80;"></span></p>
               <button id="logout-btn" class="auth-btn">LOGOUT</button>
-            </div>
-            <div id="auth-form">
-              <input id="auth-user" type="text" placeholder="Username" maxlength="20" class="auth-input" />
-              <input id="auth-pass" type="password" placeholder="Password" class="auth-input" />
-              <div class="auth-btn-row">
-                <button id="login-btn" class="auth-btn">LOGIN</button>
-                <button id="register-btn" class="auth-btn">REGISTER</button>
-              </div>
-              <p id="auth-error" class="auth-error"></p>
             </div>
           </div>
           <div id="leaderboard"></div>
