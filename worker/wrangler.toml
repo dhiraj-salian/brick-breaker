@@ -15,14 +15,12 @@ binding = "SCORES"
 id = "317dc0d4062845c99dfdc36589099ca4"
 preview_id = "9c51a11ec0eb4d1280eef3b6de3a9e00"
 
-# TODO: Dhiraj needs to create the USERS KV namespace and replace the placeholder IDs:
-#   wrangler kv:namespace create USERS
-#   wrangler kv:namespace create USERS --preview
-# Then paste the real IDs below.
+# USERS namespace holds user credentials (PBKDF2 salt + hash per username).
+# Created 2026-07-15 via wrangler kv:namespace create USERS[--preview].
 [[kv_namespaces]]
 binding = "USERS"
-id = "REPLACE_ME_USERS_ID"
-preview_id = "REPLACE_ME_USERS_PREVIEW_ID"
+id = "180cccc80e5b49cb8c28ff971192f59e"
+preview_id = "9401a393b8f74f518369fb7562bf8c2e"
 
 # Public vars.
 # ALLOWED_ORIGIN is a comma-separated list of allowed request origins.
