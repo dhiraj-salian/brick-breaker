@@ -91,8 +91,6 @@ export function setupButtons({
   onSubmitScore,
   onToggleMute,
   isMuted,
-  onLogin,
-  onRegister,
   onLogout,
   onSignIn,
 }) {
@@ -146,45 +144,13 @@ export function setupButtons({
     onSubmitScore(name);
   });
 
-  // Auth buttons (on menu overlay).
-  if (onLogin) {
-    $('login-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const u = $('auth-user').value.trim();
-      const p = $('auth-pass').value;
-      if (!u || !p) {
-        $('auth-error').textContent = 'Enter username and password';
-        return;
-      }
-      onLogin(u, p);
-    });
-  }
-  if (onRegister) {
-    $('register-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const u = $('auth-user').value.trim();
-      const p = $('auth-pass').value;
-      if (!u || !p) {
-        $('auth-error').textContent = 'Enter username and password';
-        return;
-      }
-      onRegister(u, p);
-    });
-  }
+  // Logout button (on menu overlay — stays in menu).
   if (onLogout) {
     $('logout-btn').addEventListener('click', (e) => {
       e.stopPropagation();
       onLogout();
     });
   }
-
-  // Enter key in password field triggers login
-  $('auth-pass').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      $('login-btn').click();
-    }
-  });
 
   // Sign-in CTA buttons on game-over / win overlays.
   // These dismiss the current overlay and show the menu (where auth form lives).
@@ -214,26 +180,22 @@ export function setupButtons({
 
 /**
  * Update the auth UI in the menu overlay.
+ * Only shows the logged-in state (username + logout).
+ * Login/register form is now in the separate #auth-screen overlay.
  * @param {{username: string|null}} user - current user or null
  */
 export function updateAuthUI(user) {
   const loggedIn = $('auth-logged-in');
-  const form = $('auth-form');
   const badge = $('auth-badge');
   if (user && user.username) {
     loggedIn.style.display = 'block';
-    form.style.display = 'none';
     $('auth-username').textContent = user.username;
     badge.textContent = `Playing as: ${user.username}`;
     badge.style.display = 'block';
   } else {
     loggedIn.style.display = 'none';
-    form.style.display = 'block';
     badge.style.display = 'none';
   }
-  // Clear error + password
-  $('auth-error').textContent = '';
-  $('auth-pass').value = '';
 }
 
 /**
@@ -297,11 +259,12 @@ export function renderGameOverIdentity(user, score, topCombo) {
 }
 
 /**
- * Show an auth error message.
+ * Show an auth error message on the auth screen.
  * @param {string} msg
  */
 export function showAuthError(msg) {
-  $('auth-error').textContent = msg;
+  const el = $('auth-error');
+  if (el) el.textContent = msg;
 }
 
 /**

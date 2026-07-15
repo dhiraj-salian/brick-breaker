@@ -20,8 +20,8 @@ import {
   updateAuthUI,
   updateHudIdentity,
   renderGameOverIdentity,
-  showAuthError,
 } from './ui/hud.js';
+import { createAuthScreen } from './ui/auth-screen.js';
 import { createInputManager } from './ui/input.js';
 import { sfx, resumeAudio, isMuted, toggleMuted } from './audio/sfx.js';
 import {
@@ -71,6 +71,7 @@ let state = createInitialState(1);
 let accumulator = 0;
 let lastTime = performance.now();
 let topCombo = 1; // Track highest combo reached for game-over display
+let authReady = false; // Gate: don't render HUD overlays until auth is resolved
 
 // Meshes
 const paddleMesh = createPaddleMesh();
@@ -384,45 +385,21 @@ setupButtons({
   },
   onToggleMute: () => toggleMuted(),
   isMuted: () => isMuted(),
-  onLogin: async (username, password) => {
-    try {
-      const result = await login(username, password);
-      if (result.ok) {
-        identity.setUser({ username: result.username });
-        refreshLeaderboard();
-      } else {
-        showAuthError(result.error || 'Login failed');
-      }
-    } catch (e) {
-      showAuthError('Network error');
-    }
-  },
-  onRegister: async (username, password) => {
-    try {
-      const result = await register(username, password);
-      if (result.ok) {
-        identity.setUser({ username: result.username });
-        refreshLeaderboard();
-      } else {
-        showAuthError(result.error || 'Registration failed');
-      }
-    } catch (e) {
-      showAuthError('Network error');
-    }
-  },
   onLogout: () => {
     logout();
     identity.setUser(null);
     refreshLeaderboard();
+    // Hide menu and return to auth screen
+    authReady = false;
+    document.getElementById('menu-overlay').classList.remove('active');
+    authScreen.show();
   },
   onSignIn: () => {
-    // Dismiss game-over / win overlays and show menu (with auth form)
+    // Dismiss game-over / win overlays and show auth screen
     document.getElementById('gameover-overlay').classList.remove('active');
     document.getElementById('win-overlay').classList.remove('active');
-    document.getElementById('menu-overlay').classList.add('active');
-    // Focus the username input for convenience
-    const userInput = document.getElementById('auth-user');
-    if (userInput) userInput.focus();
+    document.getElementById('menu-overlay').classList.remove('active');
+    authScreen.show();
   },
 });
 
@@ -486,6 +463,49 @@ function escapeHtml(s) {
 // Identity store — single source of truth for "who is playing"
 const identity = createIdentityStore();
 
+// ---------- Auth Screen ----------
+const authScreen = createAuthScreen({
+  onLogin: async (username, password) => {
+    try {
+      const result = await login(username, password);
+      if (result.ok) {
+        identity.setUser({ username: result.username });
+        refreshLeaderboard();
+        return { ok: true, username: result.username };
+      } else {
+        return { ok: false, error: result.error || 'Login failed' };
+      }
+    } catch (e) {
+      return { ok: false, error: 'Network error' };
+    }
+  },
+  onRegister: async (username, password) => {
+    try {
+      const result = await register(username, password);
+      if (result.ok) {
+        identity.setUser({ username: result.username });
+        refreshLeaderboard();
+        return { ok: true, username: result.username };
+      } else {
+        return { ok: false, error: result.error || 'Registration failed' };
+      }
+    } catch (e) {
+      return { ok: false, error: 'Network error' };
+    }
+  },
+  onGuest: () => {
+    // Guest mode — no identity, just reveal the menu
+    authReady = true;
+    hud.showMenu();
+    refreshLeaderboard();
+  },
+  onSuccess: (_user) => {
+    // Auth screen already hides itself; reveal menu
+    authReady = true;
+    hud.showMenu();
+  },
+});
+
 // Subscribe to identity changes → update HUD + auth UI
 identity.subscribe((user) => {
   updateAuthUI(user);
@@ -498,19 +518,30 @@ async function initAuth() {
   identity.initFromSession();
   // Then verify the token with the server
   const session = loadSession();
-  if (!session) return;
+  if (!session) {
+    // No session — show auth screen
+    authScreen.show();
+    return;
+  }
   try {
     const result = await getMe(session.token);
     if (result.ok) {
       identity.setUser({ username: result.username });
+      // Valid session — reveal menu
+      authReady = true;
+      hud.showMenu();
     } else {
-      // Token expired or invalid — clear it
+      // Token expired or invalid — clear it, show auth screen
       logout();
       identity.setUser(null);
+      authScreen.show();
     }
   } catch {
     // Network error — keep the session from localStorage
     // identity already populated from initFromSession above
+    // Reveal menu since we have a (possibly stale) session
+    authReady = true;
+    hud.showMenu();
   }
 }
 initAuth();
@@ -577,7 +608,7 @@ function loop(now) {
   particleSystem.update(dt);
   applyCameraShake(camera, state.shake);
 
-  hud.render(state);
+  if (authReady) hud.render(state);
 
   // Subtle play-light pulse while playing.
   if (playLight) {
