@@ -12,6 +12,43 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <title>Brick Breaker</title>
     <style>
+      /* ---------- Design tokens ---------- */
+      :root {
+        /* Type scale — fluid with clamp */
+        --type-xs: clamp(10px, 2.5vw, 12px);
+        --type-sm: clamp(12px, 2.8vw, 14px);
+        --type-base: clamp(14px, 3vw, 16px);
+        --type-md: clamp(15px, 3.5vw, 19px);
+        --type-lg: clamp(18px, 4.5vw, 24px);
+        --type-xl: clamp(24px, 6vw, 32px);
+        --type-2xl: clamp(32px, 8vw, 48px);
+
+        /* Spacing scale */
+        --space-xs: clamp(4px, 1vw, 8px);
+        --space-sm: clamp(6px, 1.5vw, 10px);
+        --space-md: clamp(8px, 2vw, 14px);
+        --space-lg: clamp(12px, 3vw, 20px);
+        --space-xl: clamp(16px, 4vw, 28px);
+        --space-2xl: clamp(20px, 5vw, 36px);
+
+        /* Touch target minimum */
+        --touch-min: 44px;
+
+        /* HUD element sizing */
+        --hud-padding-y: clamp(5px, 1.2vw, 7px);
+        --hud-padding-x: clamp(8px, 2vw, 12px);
+        --hud-font: clamp(13px, 3vw, 19px);
+        --hud-gap: clamp(6px, 1.5vw, 10px);
+        --hud-top: calc(env(safe-area-inset-top, 0px) + clamp(8px, 2vw, 12px));
+        --hud-side: clamp(10px, 2.5vw, 16px);
+
+        /* Panel sizing */
+        --panel-radius: clamp(8px, 1.5vw, 12px);
+        --panel-blur: 8px;
+        --panel-bg: rgba(0, 0, 0, 0.4);
+        --panel-border: rgba(255, 255, 255, 0.08);
+      }
+
       /* ---------- Reset ---------- */
       * {
         box-sizing: border-box;
@@ -92,28 +129,33 @@
 
       #hud-top {
         position: absolute;
-        top: calc(env(safe-area-inset-top, 0px) + 10px);
-        left: 14px;
-        right: 14px;
+        top: var(--hud-top);
+        left: var(--hud-side);
+        right: var(--hud-side);
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 15px;
+        font-size: var(--hud-font);
         letter-spacing: 0.5px;
         z-index: 10;
-        gap: 8px;
+        gap: var(--hud-gap);
+        flex-wrap: nowrap;
+        overflow: hidden;
       }
       #score-display {
-        font-size: 19px;
+        font-size: var(--hud-font);
         font-weight: 800;
         background: rgba(0, 0, 0, 0.35);
-        padding: 6px 12px;
-        border-radius: 8px;
+        padding: var(--hud-padding-y) var(--hud-padding-x);
+        border-radius: var(--panel-radius);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
       }
       #combo-display {
-        font-size: 22px;
+        font-size: clamp(16px, 4vw, 22px);
         color: #ffd700;
         opacity: 0;
         transition:
@@ -121,33 +163,35 @@
           transform 0.15s;
         font-weight: 800;
         text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        white-space: nowrap;
       }
       #combo-display.active {
         opacity: 1;
       }
       #lives-display {
         background: rgba(0, 0, 0, 0.35);
-        padding: 6px 10px;
-        border-radius: 8px;
+        padding: var(--hud-padding-y) var(--hud-padding-x);
+        border-radius: var(--panel-radius);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+        white-space: nowrap;
       }
 
       #pause-btn {
         background: rgba(255, 255, 255, 0.12);
         border: 1px solid rgba(255, 255, 255, 0.25);
         color: white;
-        padding: 8px 14px;
-        border-radius: 8px;
+        padding: var(--hud-padding-y) clamp(10px, 2.5vw, 16px);
+        border-radius: var(--panel-radius);
         cursor: pointer;
-        font-size: 13px;
+        font-size: var(--type-sm);
         font-weight: 700;
         letter-spacing: 0.5px;
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
-        min-width: 80px;
-        min-height: 36px;
+        min-width: var(--touch-min);
+        min-height: var(--touch-min);
       }
       #pause-btn:active {
         background: rgba(255, 255, 255, 0.22);
@@ -158,15 +202,15 @@
         background: rgba(255, 255, 255, 0.12);
         border: 1px solid rgba(255, 255, 255, 0.25);
         color: white;
-        padding: 6px 10px;
-        border-radius: 8px;
+        padding: var(--hud-padding-y);
+        border-radius: var(--panel-radius);
         cursor: pointer;
-        font-size: 16px;
+        font-size: clamp(14px, 3vw, 18px);
         pointer-events: auto;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
-        min-width: 36px;
-        min-height: 36px;
+        min-width: var(--touch-min);
+        min-height: var(--touch-min);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -182,31 +226,31 @@
       /* ---------- Floating leaderboard panel (visible during gameplay) ---------- */
       #leaderboard-panel {
         position: absolute;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-        right: 14px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-md));
+        right: var(--hud-side);
         width: min(220px, 38vw);
-        background: rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border-radius: 10px;
-        padding: 8px 10px;
-        font-size: 11px;
+        background: var(--panel-bg);
+        backdrop-filter: blur(var(--panel-blur));
+        -webkit-backdrop-filter: blur(var(--panel-blur));
+        border-radius: var(--panel-radius);
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--type-xs);
         z-index: 8;
         pointer-events: auto;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--panel-border);
       }
       #leaderboard-panel .title {
-        font-size: 10px;
+        font-size: var(--type-xs);
         font-weight: 800;
         letter-spacing: 1px;
         opacity: 0.6;
         text-transform: uppercase;
-        margin-bottom: 4px;
+        margin-bottom: var(--space-xs);
       }
       #leaderboard-panel .row {
         display: flex;
         justify-content: space-between;
-        padding: 2px 0;
+        padding: var(--space-xs) 0;
         opacity: 0.85;
       }
       #leaderboard-panel .row.me {
@@ -225,26 +269,26 @@
       #leaderboard-panel .empty {
         opacity: 0.5;
         font-style: italic;
-        font-size: 10px;
-        padding: 4px 0;
+        font-size: var(--type-xs);
+        padding: var(--space-xs) 0;
       }
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
         #leaderboard-panel {
-          font-size: 10px;
-          padding: 6px 8px;
+          font-size: var(--type-xs);
+          padding: var(--space-xs) var(--space-sm);
           width: min(160px, 38vw);
         }
       }
       @media (max-width: 380px) {
         #leaderboard-panel {
           display: none;
-        } /* too cramped on tiny phones */
+        }
       }
-      @media (max-height: 500px) and (orientation: landscape) {
+      @media (max-height: 600px) and (orientation: landscape) {
         #leaderboard-panel {
-          bottom: 8px;
-          right: 8px;
-          font-size: 10px;
+          bottom: var(--space-sm);
+          right: var(--space-sm);
+          font-size: var(--type-xs);
           width: 160px;
         }
       }
@@ -264,9 +308,10 @@
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
         text-align: center;
-        padding: 24px;
+        padding: var(--space-xl);
         pointer-events: auto;
         z-index: 20;
+        overflow-y: auto;
       }
       #menu-overlay.active,
       #pause-overlay.active,
@@ -276,8 +321,8 @@
       }
 
       .overlay h1 {
-        font-size: 48px;
-        margin-bottom: 12px;
+        font-size: var(--type-2xl);
+        margin-bottom: var(--space-md);
         background: linear-gradient(135deg, #4ade80, #06b6d4, #f472b6);
         -webkit-background-clip: text;
         background-clip: text;
@@ -287,36 +332,36 @@
         text-shadow: 0 0 30px rgba(74, 222, 128, 0.3);
       }
       .overlay h2 {
-        font-size: 28px;
-        margin-bottom: 12px;
+        font-size: var(--type-xl);
+        margin-bottom: var(--space-md);
         font-weight: 800;
       }
       .overlay p {
-        margin: 8px 0;
+        margin: var(--space-sm) 0;
         opacity: 0.85;
-        font-size: 15px;
+        font-size: var(--type-base);
       }
       .overlay .hint {
         opacity: 0.55;
-        font-size: 12px;
-        margin-top: 18px;
+        font-size: var(--type-sm);
+        margin-top: var(--space-lg);
         line-height: 1.6;
       }
 
       .overlay button {
-        margin-top: 20px;
-        padding: 16px 40px;
+        margin-top: var(--space-lg);
+        padding: var(--space-md) var(--space-2xl);
         background: linear-gradient(135deg, #4ade80, #22c55e);
         color: #052e16;
         border: none;
-        border-radius: 12px;
-        font-size: 18px;
+        border-radius: var(--panel-radius);
+        font-size: var(--type-lg);
         font-weight: 800;
         cursor: pointer;
         letter-spacing: 1px;
         box-shadow: 0 4px 24px rgba(74, 222, 128, 0.4);
-        min-width: 200px;
-        min-height: 56px;
+        min-width: min(200px, 80vw);
+        min-height: var(--touch-min);
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
         transition: transform 0.1s;
@@ -326,10 +371,10 @@
       }
 
       .overlay input {
-        margin-top: 16px;
-        padding: 12px 16px;
-        font-size: 16px;
-        border-radius: 10px;
+        margin-top: var(--space-md);
+        padding: var(--space-md) var(--space-lg);
+        font-size: 16px; /* 16px prevents iOS zoom on focus */
+        border-radius: var(--panel-radius);
         border: 1px solid rgba(255, 255, 255, 0.3);
         background: rgba(255, 255, 255, 0.08);
         color: white;
@@ -352,14 +397,14 @@
 
       /* ---------- Leaderboard ---------- */
       #leaderboard {
-        margin-top: 18px;
-        font-size: 13px;
-        max-height: 200px;
+        margin-top: var(--space-lg);
+        font-size: var(--type-sm);
+        max-height: clamp(150px, 30vh, 250px);
         overflow-y: auto;
         width: min(320px, 90vw);
         background: rgba(0, 0, 0, 0.4);
-        border-radius: 10px;
-        padding: 10px;
+        border-radius: var(--panel-radius);
+        padding: var(--space-md);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
       }
@@ -369,9 +414,9 @@
       #leaderboard .row {
         display: flex;
         justify-content: space-between;
-        padding: 6px 12px;
+        padding: var(--space-sm) var(--space-md);
         opacity: 0.9;
-        border-radius: 6px;
+        border-radius: var(--space-xs);
       }
       #leaderboard .row:nth-child(1) {
         color: #ffd700;
@@ -385,48 +430,6 @@
         color: #cd7f32;
       }
 
-      /* ---------- Mobile tweaks ---------- */
-      @media (max-width: 640px) {
-        .overlay h1 {
-          font-size: 38px;
-        }
-        .overlay h2 {
-          font-size: 24px;
-        }
-        .overlay button {
-          font-size: 17px;
-          padding: 14px 32px;
-          min-height: 52px;
-        }
-        #score-display {
-          font-size: 16px;
-          padding: 5px 10px;
-        }
-        #combo-display {
-          font-size: 18px;
-        }
-        #pause-btn {
-          font-size: 12px;
-          padding: 7px 12px;
-          min-width: 72px;
-        }
-      }
-      @media (max-width: 380px) {
-        /* tiny phones — compress HUD */
-        #score-display,
-        #lives-display {
-          font-size: 13px;
-          padding: 4px 8px;
-        }
-        #combo-display {
-          font-size: 16px;
-        }
-        #pause-btn {
-          font-size: 11px;
-          padding: 6px 10px;
-          min-width: 60px;
-        }
-      }
       @media (prefers-reduced-motion: reduce) {
         #combo-display,
         .overlay button {
@@ -436,23 +439,23 @@
 
       /* ---------- Auth UI ---------- */
       .auth-box {
-        margin-top: 16px;
-        padding: 12px 16px;
+        margin-top: var(--space-md);
+        padding: var(--space-md) var(--space-lg);
         background: rgba(0, 0, 0, 0.4);
-        border-radius: 10px;
+        border-radius: var(--panel-radius);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         width: min(280px, 90vw);
       }
       .auth-label {
-        font-size: 13px;
-        margin: 4px 0;
+        font-size: var(--type-sm);
+        margin: var(--space-xs) 0;
       }
       .auth-input {
-        margin-top: 8px;
-        padding: 10px 14px;
-        font-size: 15px;
-        border-radius: 8px;
+        margin-top: var(--space-sm);
+        padding: var(--space-sm) var(--space-md);
+        font-size: 16px; /* 16px prevents iOS zoom */
+        border-radius: var(--panel-radius);
         border: 1px solid rgba(255, 255, 255, 0.3);
         background: rgba(255, 255, 255, 0.08);
         color: white;
@@ -465,22 +468,22 @@
       }
       .auth-btn-row {
         display: flex;
-        gap: 10px;
-        margin-top: 10px;
+        gap: var(--space-sm);
+        margin-top: var(--space-sm);
       }
       .auth-btn {
         flex: 1;
         margin-top: 0;
-        padding: 10px 16px;
-        font-size: 14px;
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--type-base);
         font-weight: 700;
         background: rgba(255, 255, 255, 0.15);
         color: white;
         border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 8px;
+        border-radius: var(--panel-radius);
         cursor: pointer;
-        min-width: 80px;
-        min-height: 40px;
+        min-width: var(--touch-min);
+        min-height: var(--touch-min);
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
         transition: background 0.1s;
@@ -491,9 +494,9 @@
       }
       .auth-error {
         color: #f87171;
-        font-size: 12px;
-        margin-top: 8px;
-        min-height: 16px;
+        font-size: var(--type-sm);
+        margin-top: var(--space-sm);
+        min-height: var(--type-sm);
       }
       #auth-logged-in {
         text-align: center;
@@ -501,18 +504,81 @@
       /* Small "Playing as" badge in corner during gameplay */
       #auth-badge {
         position: absolute;
-        bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
-        left: 14px;
-        font-size: 11px;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-md));
+        left: var(--hud-side);
+        font-size: var(--type-xs);
         opacity: 0.7;
         background: rgba(0, 0, 0, 0.35);
-        padding: 4px 8px;
-        border-radius: 6px;
+        padding: var(--space-xs) var(--space-sm);
+        border-radius: var(--space-sm);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         pointer-events: none;
         z-index: 8;
         display: none;
+      }
+
+      /* Username inline on the score display */
+      .score-username {
+        font-size: 0.75em;
+        font-weight: 600;
+        opacity: 0.85;
+        margin-left: 4px;
+        color: #4ade80;
+      }
+
+      /* Game-over / win identity line */
+      .gameover-username {
+        font-size: clamp(15px, 4vw, 20px);
+        font-weight: 800;
+        color: #4ade80;
+        margin-bottom: 8px;
+        text-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+      }
+
+      /* Sign-in CTA on game-over / win */
+      .gameover-cta {
+        margin-top: var(--space-md);
+        margin-bottom: var(--space-md);
+        padding: var(--space-md) var(--space-lg);
+        background: rgba(74, 222, 128, 0.1);
+        border: 1px solid rgba(74, 222, 128, 0.3);
+        border-radius: var(--panel-radius);
+      }
+      .gameover-cta .signin-hint {
+        font-size: var(--type-sm);
+        opacity: 0.7;
+        margin: 0 0 var(--space-sm) 0;
+      }
+      .gameover-cta .auth-btn {
+        background: rgba(74, 222, 128, 0.2);
+        border: 1px solid rgba(74, 222, 128, 0.4);
+        min-width: var(--touch-min);
+        min-height: var(--touch-min);
+      }
+
+      /* ---------- Large screens: scale up HUD ---------- */
+      @media (min-width: 1280px) {
+        :root {
+          --hud-font: clamp(16px, 1.5vw, 22px);
+          --hud-side: clamp(20px, 2vw, 32px);
+        }
+        #leaderboard-panel {
+          width: min(260px, 30vw);
+        }
+      }
+      @media (min-width: 1920px) {
+        :root {
+          --hud-font: clamp(18px, 1.2vw, 26px);
+          --hud-side: clamp(28px, 2vw, 48px);
+        }
+        #leaderboard-panel {
+          width: min(300px, 25vw);
+          font-size: 14px;
+        }
+        #auth-badge {
+          font-size: 13px;
+        }
       }
     </style>
   </head>
@@ -521,7 +587,7 @@
       <canvas id="game-canvas"></canvas>
       <div id="hud">
         <div id="hud-top">
-          <div id="score-display">SCORE: <span id="score-value">0</span></div>
+          <div id="score-display">SCORE: <span id="score-value">0</span><span id="score-username" class="score-username"></span></div>
           <div id="combo-display">x<span id="combo-value">2</span> COMBO!</div>
           <div id="lives-display">❤️ <span id="lives-value">3</span></div>
           <button id="mute-btn" aria-label="Toggle sound" title="Toggle sound">
@@ -559,13 +625,23 @@
         </div>
         <div id="gameover-overlay" class="overlay">
           <h2>GAME OVER</h2>
+          <div id="gameover-username" class="gameover-username" style="display:none"></div>
           <p>Final score: <span id="final-score">0</span></p>
+          <div id="gameover-cta" class="gameover-cta" style="display:none">
+            <p class="signin-hint">Sign in to put your name on the leaderboard</p>
+            <button id="gameover-signin-btn" class="auth-btn">SIGN IN</button>
+          </div>
           <div id="leaderboard"></div>
           <button id="restart-btn">PLAY AGAIN</button>
         </div>
         <div id="win-overlay" class="overlay">
           <h2>YOU WIN!</h2>
+          <div id="win-username" class="gameover-username" style="display:none"></div>
           <p>Final score: <span id="win-score">0</span></p>
+          <div id="win-cta" class="gameover-cta" style="display:none">
+            <p class="signin-hint">Sign in to put your name on the leaderboard</p>
+            <button id="win-signin-btn" class="auth-btn">SIGN IN</button>
+          </div>
           <input id="name-input" type="text" placeholder="Enter your name" maxlength="20" />
           <button id="submit-score-btn">SUBMIT SCORE</button>
           <div id="leaderboard"></div>
