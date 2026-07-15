@@ -94,6 +94,7 @@ export function setupButtons({
   onLogin,
   onRegister,
   onLogout,
+  onSignIn,
 }) {
   // Start
   $('start-btn').addEventListener('click', (e) => {
@@ -185,6 +186,17 @@ export function setupButtons({
     }
   });
 
+  // Sign-in CTA buttons on game-over / win overlays.
+  // These dismiss the current overlay and show the menu (where auth form lives).
+  const signinCtaHandler = (e) => {
+    e.stopPropagation();
+    if (onSignIn) onSignIn();
+  };
+  const goSignInBtn = $('gameover-signin-btn');
+  if (goSignInBtn) goSignInBtn.addEventListener('click', signinCtaHandler);
+  const winSignInBtn = $('win-signin-btn');
+  if (winSignInBtn) winSignInBtn.addEventListener('click', signinCtaHandler);
+
   // Tap-to-resume on the pause overlay (anywhere except buttons).
   $('pause-overlay').addEventListener('click', (e) => {
     if (e.target.tagName !== 'BUTTON') onResume();
@@ -225,6 +237,66 @@ export function updateAuthUI(user) {
 }
 
 /**
+ * Update the HUD score area to show the logged-in username.
+ * Called on boot and whenever the identity changes.
+ * @param {{username: string}|null} user - current user or null
+ */
+export function updateHudIdentity(user) {
+  const scoreUserEl = $('score-username');
+  const badge = $('auth-badge');
+  if (user && user.username) {
+    if (scoreUserEl) {
+      scoreUserEl.textContent = ` @${user.username}`;
+      scoreUserEl.style.display = 'inline';
+    }
+    if (badge) {
+      badge.textContent = `Playing as: ${user.username}`;
+      badge.style.display = 'block';
+    }
+  } else {
+    if (scoreUserEl) {
+      scoreUserEl.textContent = '';
+    }
+    if (badge) {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+/**
+ * Render identity info on the game-over / win screen.
+ * Shows "@username — score pts (top combo ×N)" when logged in,
+ * or hides the line and shows a sign-in CTA when anonymous.
+ * @param {{username: string}|null} user - current user or null
+ * @param {number} score - final score
+ * @param {number} topCombo - highest combo reached
+ */
+export function renderGameOverIdentity(user, score, topCombo) {
+  const usernameEl = $('gameover-username');
+  const winUsernameEl = $('win-username');
+  const cta = $('gameover-cta');
+  const winCta = $('win-cta');
+  if (user && user.username) {
+    const text = `@${user.username} — ${score} pts (top combo ×${topCombo})`;
+    if (usernameEl) {
+      usernameEl.textContent = text;
+      usernameEl.style.display = 'block';
+    }
+    if (winUsernameEl) {
+      winUsernameEl.textContent = text;
+      winUsernameEl.style.display = 'block';
+    }
+    if (cta) cta.style.display = 'none';
+    if (winCta) winCta.style.display = 'none';
+  } else {
+    if (usernameEl) usernameEl.style.display = 'none';
+    if (winUsernameEl) winUsernameEl.style.display = 'none';
+    if (cta) cta.style.display = 'block';
+    if (winCta) winCta.style.display = 'block';
+  }
+}
+
+/**
  * Show an auth error message.
  * @param {string} msg
  */
@@ -250,10 +322,11 @@ export function renderLeaderboardPanel(scores, currentPlayerScore = null, curren
     .map((s, i) => {
       const isMe =
         (currentUsername && s.username === currentUsername) ||
-        (currentPlayerScore !== null && s.score === currentPlayerScore);
+        (!currentUsername && currentPlayerScore !== null && s.score === currentPlayerScore);
+      const displayName = s.username ? `@${s.username}` : escapeHtml(s.name);
       return `<div class="row ${isMe ? 'me' : ''}">
           <span class="rank">${i + 1}.</span>
-          <span class="name">${escapeHtml(s.name)}</span>
+          <span class="name">${displayName}</span>
           <span class="score">${s.score}</span>
         </div>`;
     })

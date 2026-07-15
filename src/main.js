@@ -18,6 +18,8 @@ import {
   setupButtons,
   renderLeaderboardPanel,
   updateAuthUI,
+  updateHudIdentity,
+  renderGameOverIdentity,
   showAuthError,
 } from './ui/hud.js';
 import { createInputManager } from './ui/input.js';
@@ -52,6 +54,7 @@ import { calculateScore } from './core/score-calculator.js';
 import { registerHit, tickCombo, resetCombo } from './core/combo-system.js';
 import { STATUS, POWER_UP_TYPE, WORLD } from './core/constants.js';
 import { generateDefaultName } from './core/default-name.js';
+import { createIdentityStore } from './core/identity.js';
 import { LEVELS } from './levels/levels.js';
 import { submitScore, fetchTopScores } from './net/leaderboard.js';
 import { register, login, getMe, logout, loadSession } from './net/auth.js';
@@ -67,6 +70,7 @@ let worldWidth = 14;
 let state = createInitialState(1);
 let accumulator = 0;
 let lastTime = performance.now();
+let topCombo = 1; // Track highest combo reached for game-over display
 
 // Meshes
 const paddleMesh = createPaddleMesh();
@@ -189,6 +193,7 @@ function applyEvents(events) {
         ev.brick.broken = true;
         // Score + combo
         state = registerHit(state);
+        if (state.combo > topCombo) topCombo = state.combo;
         const points = calculateScore({
           base: ev.brick.points,
           combo: state.combo,
@@ -308,6 +313,7 @@ function physicsStep(dt) {
       state.shake.intensity = 1.0;
       state.flash = 1.0;
       hud.showGameOver(state.score);
+      renderGameOverIdentity(identity.getUser(), state.score, topCombo);
       // Only auto-submit if we transitioned from PLAYING→LOST on this step.
       if (wasPlaying) autoSubmitScore();
     } else {
@@ -322,6 +328,7 @@ function physicsStep(dt) {
       state = winGame(state);
       sfx.win();
       hud.showWin(state.score);
+      renderGameOverIdentity(identity.getUser(), state.score, topCombo);
       autoSubmitScore();
     } else {
       // Advance to next level (simplified: reset state for next level)
@@ -346,6 +353,7 @@ setupButtons({
   onStart: () => {
     resumeAudio();
     state = startGame(state);
+    topCombo = 1;
     loadLevel(0);
     refreshLeaderboard();
   },
@@ -359,6 +367,7 @@ setupButtons({
   },
   onRestart: () => {
     state = createInitialState(1);
+    topCombo = 1;
     loadLevel(0);
     hud.showMenu();
     refreshLeaderboard();
@@ -368,7 +377,7 @@ setupButtons({
       await submitScore(name, state.score);
       const top = await fetchTopScores(10);
       renderLeaderboard(top);
-      renderLeaderboardPanel(top, state.score, currentUser?.username);
+      renderLeaderboardPanel(top, state.score, identity.getUsername());
     } catch (e) {
       console.error('Score submit failed', e);
     }
@@ -379,8 +388,7 @@ setupButtons({
     try {
       const result = await login(username, password);
       if (result.ok) {
-        currentUser = { username: result.username };
-        updateAuthUI(currentUser);
+        identity.setUser({ username: result.username });
         refreshLeaderboard();
       } else {
         showAuthError(result.error || 'Login failed');
@@ -393,8 +401,7 @@ setupButtons({
     try {
       const result = await register(username, password);
       if (result.ok) {
-        currentUser = { username: result.username };
-        updateAuthUI(currentUser);
+        identity.setUser({ username: result.username });
         refreshLeaderboard();
       } else {
         showAuthError(result.error || 'Registration failed');
@@ -405,9 +412,17 @@ setupButtons({
   },
   onLogout: () => {
     logout();
-    currentUser = null;
-    updateAuthUI(null);
+    identity.setUser(null);
     refreshLeaderboard();
+  },
+  onSignIn: () => {
+    // Dismiss game-over / win overlays and show menu (with auth form)
+    document.getElementById('gameover-overlay').classList.remove('active');
+    document.getElementById('win-overlay').classList.remove('active');
+    document.getElementById('menu-overlay').classList.add('active');
+    // Focus the username input for convenience
+    const userInput = document.getElementById('auth-user');
+    if (userInput) userInput.focus();
   },
 });
 
@@ -415,32 +430,31 @@ async function refreshLeaderboard() {
   try {
     const top = await fetchTopScores(10);
     renderLeaderboard(top);
-    renderLeaderboardPanel(top, state.score, currentUser?.username);
+    renderLeaderboardPanel(top, state.score, identity.getUsername());
   } catch (e) {
     /* leaderboard fetch failed — non-critical */
   }
 }
 
 /**
- * Auto-submit the current score with a generated default name.
+ * Auto-submit the current score.
+ *
+ * When logged in, submits via the authenticated path (the worker attaches
+ * the username from the token). When anonymous, generates a default name
+ * and submits via the legacy path.
  *
  * Called from the WIN and LOST transitions so players never lose their
- * score by forgetting to type a name (or clicking Restart too fast). The
- * generated name is shown in the leaderboard panel; the user can still
- * manually rename + re-submit if they wish.
- *
- * Skips submission when score is 0 — posting zero-scores clutters the
- * board. Safe to call repeatedly (network failure is swallowed).
+ * score by forgetting to type a name. Skips submission when score is 0.
  */
 async function autoSubmitScore() {
   if (!state.score || state.score <= 0) return;
-  const name = generateDefaultName();
+  const name = identity.isLoggedIn() ? identity.getUsername() : generateDefaultName();
   try {
     await submitScore(name, state.score);
     // Refresh panel so the saved entry shows up immediately.
     const top = await fetchTopScores(10);
     renderLeaderboard(top);
-    renderLeaderboardPanel(top, state.score, currentUser?.username);
+    renderLeaderboardPanel(top, state.score, identity.getUsername());
   } catch (e) {
     /* network or HMAC failure — non-critical */
   }
@@ -454,10 +468,10 @@ function renderLeaderboard(scores) {
       return;
     }
     el.innerHTML = scores
-      .map(
-        (s, i) =>
-          `<div class="row"><span>${i + 1}. ${escapeHtml(s.name)}</span><span>${s.score}</span></div>`
-      )
+      .map((s, i) => {
+        const displayName = s.username ? `@${s.username}` : escapeHtml(s.name);
+        return `<div class="row"><span>${i + 1}. ${displayName}</span><span>${s.score}</span></div>`;
+      })
       .join('');
   });
 }
@@ -469,26 +483,34 @@ function escapeHtml(s) {
   );
 }
 
-// Current authenticated user (or null)
-let currentUser = null;
+// Identity store — single source of truth for "who is playing"
+const identity = createIdentityStore();
+
+// Subscribe to identity changes → update HUD + auth UI
+identity.subscribe((user) => {
+  updateAuthUI(user);
+  updateHudIdentity(user);
+});
 
 // On startup, check for existing session
 async function initAuth() {
+  // First, try to populate from localStorage (instant, no network)
+  identity.initFromSession();
+  // Then verify the token with the server
   const session = loadSession();
   if (!session) return;
   try {
     const result = await getMe(session.token);
     if (result.ok) {
-      currentUser = { username: result.username };
-      updateAuthUI(currentUser);
+      identity.setUser({ username: result.username });
     } else {
       // Token expired or invalid — clear it
       logout();
+      identity.setUser(null);
     }
   } catch {
-    // Network error — keep the session, try again later
-    currentUser = { username: session.username };
-    updateAuthUI(currentUser);
+    // Network error — keep the session from localStorage
+    // identity already populated from initFromSession above
   }
 }
 initAuth();
@@ -509,6 +531,7 @@ function loop(now) {
   }
   if (i.restartIntent) {
     state = createInitialState(1);
+    topCombo = 1;
     loadLevel(0);
     hud.showMenu();
   }
